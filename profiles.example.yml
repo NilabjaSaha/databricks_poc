@@ -1,0 +1,12 @@
+# Copy to profiles.yml and set DATABRICKS_TOKEN (e.g. in .env). profiles.yml is git-ignored.
+dbt_core_databricks_demo:
+  outputs:
+    dev:
+      catalog: dbt_project_catalog
+      host: adb-7405607086066029.9.azuredatabricks.net
+      http_path: /sql/1.0/warehouses/34c36d72f9fe963a
+      schema: default
+      threads: 1
+      token: "{{ env_var('DATABRICKS_TOKEN') }}"
+      type: databricks
+  target: dev
