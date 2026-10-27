@@ -42,3 +42,13 @@ python -c "from databricks.connect import DatabricksSession; print(DatabricksSes
 - dbt-databricks runs SQL through the Databricks SQL connector; Databricks Connect is for running PySpark code locally against Databricks compute.
 - Do not install `pyspark` separately; it conflicts with `databricks-connect`.
 - Python UDFs require the local Python minor version to match the compute's (3.12 for DBR 16.4 LTS and later).
+
+## Running dbt
+
+Copy `profiles.example.yml` to `profiles.yml` and export `DATABRICKS_TOKEN` (or put the token directly in `profiles.yml`, which is git-ignored), then:
+
+```bash
+dbt debug   # check the connection
+dbt run
+dbt test
+```
