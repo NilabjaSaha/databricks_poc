@@ -2,3 +2,4 @@
 # Target compute: Databricks Runtime 18 LTS / serverless environment v5
 dbt-databricks==1.12.8
 databricks-connect==18.3.7
+shandy-sqlfmt[jinjafmt]==0.32.0
