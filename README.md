@@ -45,7 +45,14 @@ python -c "from databricks.connect import DatabricksSession; print(DatabricksSes
 
 ## Running dbt
 
-Copy `profiles.example.yml` to `profiles.yml` and export `DATABRICKS_TOKEN` (or put the token directly in `profiles.yml`, which is git-ignored), then:
+`profiles.yml` reads the access token from the `DATABRICKS_TOKEN` environment variable. Put it in a `.env` file (git-ignored) and load it:
+
+```bash
+echo 'DATABRICKS_TOKEN=<your-token>' > .env
+set -a; source .env; set +a
+```
+
+Then:
 
 ```bash
 dbt debug   # check the connection

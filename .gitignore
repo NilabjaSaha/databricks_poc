@@ -6,4 +6,4 @@ logs/
 .user.yml
 .env
 .vscode/
-profiles.yml
+*:Zone.Identifier
