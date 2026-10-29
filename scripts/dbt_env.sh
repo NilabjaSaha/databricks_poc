@@ -14,5 +14,10 @@ DBT_DEV_SCHEMA="$(databricks current-user me -p "$_dbt_profile" -o json \
   | python3 -c 'import json, re, sys; print(re.sub(r"\W", "_", json.load(sys.stdin)["userName"].split("@")[0]).lower())')" || return 1
 export DATABRICKS_TOKEN DBT_DEV_SCHEMA
 
-echo "dbt: profile=$_dbt_profile dev schema=$DBT_DEV_SCHEMA"
+# Also write them to .env (git-ignored) for VS Code / dbt Power User
+_dbt_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+(umask 077 && printf 'DATABRICKS_TOKEN=%s\nDBT_DEV_SCHEMA=%s\n' "$DATABRICKS_TOKEN" "$DBT_DEV_SCHEMA" > "$_dbt_root/.env")
+
+echo "dbt: profile=$_dbt_profile dev schema=$DBT_DEV_SCHEMA (also written to .env)"
+unset _dbt_root
 unset _dbt_profile
