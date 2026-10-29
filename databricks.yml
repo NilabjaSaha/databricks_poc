@@ -32,9 +32,9 @@ targets:
     workspace:
       host: https://adb-7405619838309890.10.azuredatabricks.net
       # We explicitly deploy to /Workspace/Users/nilabja.saha@knowit.se to make sure we only have a single copy.
-      root_path: /Workspace/Shared/.bundle/${bundle.name}/${bundle.target}
+      root_path: /Workspace/Users/nilabja.saha@knowit.se/.bundle/${bundle.name}/${bundle.target}
     variables:
-      catalog: dbw_dbxpoc_sbx_weu
+      catalog: dbw_dbxpoc_prod_weu
       schema: prod
     permissions:
       - user_name: nilabja.saha@knowit.se
