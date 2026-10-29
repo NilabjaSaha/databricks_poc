@@ -1,0 +1,45 @@
+name: "databricks_poc"
+version: "1.0.0"
+config-version: 2
+
+# This setting configures which "profile" dbt uses for this project.
+# The profile lives in ./profiles.yml and is shared by local dbt runs and the
+# bundle's dbt job (see resources/dbt.job.yml).
+profile: "databricks_poc"
+
+# For Declarative Automation Bundles, we put everything in src, as you may have
+# non-dbt resources in your project.
+model-paths: ["src/models"]
+analysis-paths: ["src/analyses"]
+test-paths: ["src/tests"]
+seed-paths: ["src/seeds"]
+macro-paths: ["src/macros"]
+snapshot-paths: ["src/snapshots"]
+
+target-path: "target" # directory which will store compiled SQL files
+clean-targets: # directories to be removed by `dbt clean`
+  - "target"
+  - "dbt_packages"
+
+# Configuring models
+# Full documentation: https://docs.getdbt.com/docs/configuring-models
+# Schema names are resolved by macros/generate_schema_name.sql:
+# <target schema>_<custom schema> in dev, <custom schema> in prod.
+models:
+  databricks_poc:
+    bronze:
+      +materialized: table
+      +schema: bronze
+    silver:
+      +materialized: table
+      +schema: silver
+    gold:
+      +materialized: view
+      +schema: gold
+
+seeds:
+  databricks_poc:
+    +schema: bronze
+    # Sample source data, standing in for files uploaded to the landing schema.
+    landing:
+      +schema: landing

@@ -16,8 +16,12 @@ dev = [
     "pytest",
     "ruff",
     "databricks-dlt",
-    "databricks-connect>=16.4,<16.5",
+    # Must not be newer than the compute's runtime (DBR 18 LTS / serverless environment v5)
+    "databricks-connect>=18.3,<18.4",
     "ipykernel",
+    # Keep in sync with resources/dbt.job.yml
+    "dbt-databricks==1.12.8",
+    "shandy-sqlfmt[jinjafmt]==0.32.0",
 ]
 
 [project.scripts]
@@ -32,3 +36,6 @@ packages = ["src"]
 
 [tool.ruff]
 line-length = 120
+
+[tool.sqlfmt]
+exclude = [".venv/**/*", "target/**/*", "dbt_packages/**/*"]

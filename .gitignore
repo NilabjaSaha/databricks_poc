@@ -12,3 +12,11 @@ scratch/**
 .claude/
 .github/
 .vscode/
+
+# dbt
+target/
+dbt_packages/
+logs/
+.user.yml
+.env
+*:Zone.Identifier

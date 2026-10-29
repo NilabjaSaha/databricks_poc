@@ -1,0 +1,27 @@
+version: 2
+
+# Sample data for the landing source (models/sources/landing_sources.yml).
+# Replace with real uploads in production.
+seeds:
+  - name: orders
+    config:
+      column_types:
+        created_at: timestamp
+        unit_price: decimal(10,2)
+  - name: products
+    config:
+      column_types:
+        created_at: timestamp
+        ean: string
+        price: decimal(10,2)
+  - name: reviews
+    config:
+      column_types:
+        created_at: timestamp
+        rating: int
+  - name: users
+    config:
+      column_types:
+        created_at: timestamp
+        birth_date: date
+        zip: string

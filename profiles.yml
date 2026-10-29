@@ -1,0 +1,28 @@
+# dbt profile shared by local development and the bundle's dbt job.
+#
+# Locally, dbt picks this file up from the project root. Run
+# `source scripts/dbt_env.sh` first to export a token from your Databricks CLI
+# login and your personal dev schema (see README.md).
+#
+# In the deployed job (resources/dbt.job.yml), Databricks injects DBT_HOST and
+# DBT_ACCESS_TOKEN, and the job passes dev_schema as a var.
+databricks_poc:
+  target: dev
+  outputs:
+    dev:
+      type: databricks
+      host: "{{ env_var('DBT_HOST', 'adb-7405619838309890.10.azuredatabricks.net') }}"
+      http_path: /sql/1.0/warehouses/6f0a5b155517b87b
+      catalog: dbw_dbxpoc_sbx_weu
+      # Personal schema prefix, e.g. nilabja_saha -> nilabja_saha_bronze
+      schema: "{{ var('dev_schema', env_var('DBT_DEV_SCHEMA', 'dev')) }}"
+      token: "{{ env_var('DBT_ACCESS_TOKEN', '') or env_var('DATABRICKS_TOKEN') }}"
+      threads: 4
+    prod:
+      type: databricks
+      host: "{{ env_var('DBT_HOST', 'adb-7405619838309890.10.azuredatabricks.net') }}"
+      http_path: /sql/1.0/warehouses/6f0a5b155517b87b
+      catalog: dbw_dbxpoc_sbx_weu
+      schema: default
+      token: "{{ env_var('DBT_ACCESS_TOKEN', '') or env_var('DATABRICKS_TOKEN') }}"
+      threads: 4

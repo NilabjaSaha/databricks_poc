@@ -1,0 +1,21 @@
+id,created_at,title,category,ean,vendor,price
+1,2024-01-01 10:00:48,Deluxe Gadget 1,Gadget,3453385008862,Acme Corp,103.12
+2,2024-01-19 15:21:42,Compact Gadget 2,Gadget,2645100452462,Globex,38.74
+3,2024-01-18 07:14:22,Pro Gadget 3,Gadget,8381094320374,Globex,70.14
+4,2024-01-26 00:14:11,Deluxe Doohickey 4,Doohickey,8437586875258,Initech,45.29
+5,2024-01-31 12:15:18,Compact Gizmo 5,Gizmo,7683367452945,Acme Corp,57.05
+6,2024-01-20 09:37:51,Compact Doohickey 6,Doohickey,9081967657936,Stark Industries,23.1
+7,2024-01-03 20:05:57,Smart Widget 7,Widget,7364547568321,Stark Industries,32.88
+8,2024-01-02 08:17:51,Smart Gadget 8,Gadget,2404390832716,Globex,130.64
+9,2024-01-09 16:30:29,Pro Widget 9,Widget,7420263617246,Globex,58.68
+10,2024-01-22 09:43:13,Pro Gizmo 10,Gizmo,2256913741227,Stark Industries,97.07
+11,2024-01-06 16:49:49,Rugged Gizmo 11,Gizmo,5028919575309,Acme Corp,121.73
+12,2024-01-09 02:24:35,Deluxe Widget 12,Widget,6535001295567,Globex,100.04
+13,2024-01-29 23:24:19,Rugged Widget 13,Widget,5656358177667,Globex,40.76
+14,2024-01-24 21:17:02,Rugged Doohickey 14,Doohickey,7366856944791,Globex,149.61
+15,2024-01-17 17:58:06,Compact Gizmo 15,Gizmo,1827879780490,Acme Corp,27.16
+16,2024-01-26 15:22:13,Mini Gizmo 16,Gizmo,7769141307920,Umbrella,91.4
+17,2024-01-17 09:09:13,Mini Widget 17,Widget,3017435138489,Stark Industries,113.88
+18,2024-01-04 10:41:09,Rugged Doohickey 18,Doohickey,8980728518346,Acme Corp,143.3
+19,2024-01-17 06:30:16,Mini Doohickey 19,Doohickey,2872230480495,Initech,127.04
+20,2024-01-05 13:36:49,Deluxe Gizmo 20,Gizmo,9595621798971,Acme Corp,21.22

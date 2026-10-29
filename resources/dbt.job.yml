@@ -1,0 +1,24 @@
+resources:
+  jobs:
+    dbt_job:
+      name: dbt_job
+
+      tasks:
+        - task_key: dbt
+          environment_key: default
+          dbt_task:
+            project_directory: ../
+            # The catalog, schema and warehouse are defined in ../profiles.yml
+            profiles_directory: ./
+            commands:
+              # dev_schema is used by the dev target in profiles.yml
+              - 'dbt deps --target=${bundle.target}'
+              - 'dbt seed --target=${bundle.target} --vars "{ dev_schema: ${workspace.current_user.short_name} }"'
+              - 'dbt build --target=${bundle.target} --vars "{ dev_schema: ${workspace.current_user.short_name} }"'
+
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "5"
+            dependencies:
+              - dbt-databricks==1.12.8

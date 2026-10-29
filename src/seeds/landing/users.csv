@@ -1,0 +1,51 @@
+id,created_at,name,email,city,state,zip,birth_date,source
+1,2024-01-04 08:46:11,Jamie Karlsson,user1@example.com,Gothenburg,Vastra Gotaland,84364,1965-02-24,Organic
+2,2024-01-09 17:18:16,Sam Eriksson,user2@example.com,Gothenburg,Vastra Gotaland,82063,1970-05-17,Twitter
+3,2024-02-18 07:19:25,Noa Johansson,user3@example.com,Lund,Skane,50857,1985-11-21,Google
+4,2024-01-08 09:01:33,Elia Eriksson,user4@example.com,Uppsala,Uppsala,39451,1964-06-01,Twitter
+5,2024-01-01 02:35:05,Kim Eriksson,user5@example.com,Gothenburg,Vastra Gotaland,92719,1963-04-03,Affiliate
+6,2024-01-16 10:08:20,Jamie Andersson,user6@example.com,Lund,Skane,97684,1991-04-18,Facebook
+7,2024-02-21 14:49:14,Elia Johansson,user7@example.com,Uppsala,Uppsala,34957,1966-02-22,Organic
+8,2024-01-30 01:58:20,Jamie Nilsson,user8@example.com,Uppsala,Uppsala,98259,2001-11-04,Affiliate
+9,2024-01-16 06:58:32,Noa Karlsson,user9@example.com,Stockholm,Stockholm,34931,1994-08-05,Organic
+10,2024-01-16 02:44:40,Robin Karlsson,user10@example.com,Uppsala,Uppsala,68082,1995-02-02,Twitter
+11,2024-01-11 14:47:49,Alex Andersson,user11@example.com,Gothenburg,Vastra Gotaland,73653,1990-04-28,Organic
+12,2024-01-01 14:12:53,Alex Johansson,user12@example.com,Uppsala,Uppsala,44760,1989-05-14,Twitter
+13,2024-01-19 07:55:34,Elia Johansson,user13@example.com,Gothenburg,Vastra Gotaland,17665,1997-12-18,Affiliate
+14,2024-02-07 17:21:33,Jamie Andersson,user14@example.com,Stockholm,Stockholm,75909,1993-03-02,Twitter
+15,2024-02-08 02:28:27,Sam Johansson,user15@example.com,Stockholm,Stockholm,98501,1975-07-04,Twitter
+16,2024-01-03 22:33:03,Kim Eriksson,user16@example.com,Lund,Skane,20745,1986-11-19,Twitter
+17,2024-02-12 11:26:20,Jamie Karlsson,user17@example.com,Gothenburg,Vastra Gotaland,41285,1976-07-05,Google
+18,2024-01-01 16:41:08,Elia Karlsson,user18@example.com,Stockholm,Stockholm,91416,1996-02-03,Twitter
+19,2024-01-09 12:42:25,Kim Eriksson,user19@example.com,Malmo,Skane,19016,1975-06-10,Facebook
+20,2024-02-09 23:48:37,Elia Eriksson,user20@example.com,Malmo,Skane,79329,1960-11-27,Twitter
+21,2024-01-17 04:12:09,Charlie Andersson,user21@example.com,Gothenburg,Vastra Gotaland,24029,1995-03-09,Google
+22,2024-02-13 23:05:30,Kim Karlsson,user22@example.com,Gothenburg,Vastra Gotaland,44600,1992-08-09,Affiliate
+23,2024-01-03 00:07:44,Sam Nilsson,user23@example.com,Malmo,Skane,53719,1968-11-09,Facebook
+24,2024-02-05 00:21:07,Elia Eriksson,user24@example.com,Uppsala,Uppsala,24663,1964-12-05,Twitter
+25,2024-02-05 05:23:30,Alex Karlsson,user25@example.com,Lund,Skane,66333,1968-01-10,Google
+26,2024-02-13 09:05:06,Alex Karlsson,user26@example.com,Gothenburg,Vastra Gotaland,97416,1966-06-25,Twitter
+27,2024-02-29 08:37:09,Noa Eriksson,user27@example.com,Gothenburg,Vastra Gotaland,31299,1971-07-01,Facebook
+28,2024-01-18 05:47:46,Jamie Nilsson,user28@example.com,Gothenburg,Vastra Gotaland,24168,1984-01-28,Organic
+29,2024-01-23 11:06:41,Kim Johansson,user29@example.com,Uppsala,Uppsala,39831,1974-01-22,Facebook
+30,2024-02-25 02:31:39,Noa Karlsson,user30@example.com,Malmo,Skane,46585,1982-11-17,Organic
+31,2024-02-26 09:30:37,Jamie Andersson,user31@example.com,Stockholm,Stockholm,33405,1997-05-02,Affiliate
+32,2024-01-28 22:04:17,Noa Karlsson,user32@example.com,Malmo,Skane,77033,1967-07-19,Facebook
+33,2024-01-01 18:55:46,Charlie Andersson,user33@example.com,Uppsala,Uppsala,80575,2003-12-24,Facebook
+34,2024-03-01 12:01:19,Jamie Nilsson,user34@example.com,Stockholm,Stockholm,91678,1980-11-28,Affiliate
+35,2024-02-12 14:52:08,Charlie Eriksson,user35@example.com,Malmo,Skane,52753,1985-12-10,Twitter
+36,2024-02-12 13:48:15,Robin Johansson,user36@example.com,Uppsala,Uppsala,98777,1971-10-19,Google
+37,2024-01-20 10:26:46,Noa Eriksson,user37@example.com,Stockholm,Stockholm,37549,1987-10-20,Google
+38,2024-02-13 07:46:50,Elia Nilsson,user38@example.com,Uppsala,Uppsala,77000,1990-12-06,Affiliate
+39,2024-01-22 03:24:00,Charlie Eriksson,user39@example.com,Lund,Skane,40784,2003-05-08,Facebook
+40,2024-01-16 17:17:57,Robin Andersson,user40@example.com,Stockholm,Stockholm,90120,1964-08-14,Twitter
+41,2024-01-26 08:52:59,Kim Nilsson,user41@example.com,Uppsala,Uppsala,29342,2001-12-01,Affiliate
+42,2024-02-21 18:51:29,Noa Johansson,user42@example.com,Gothenburg,Vastra Gotaland,70889,1963-09-08,Affiliate
+43,2024-02-12 19:20:16,Elia Johansson,user43@example.com,Uppsala,Uppsala,83259,1998-06-25,Organic
+44,2024-02-27 05:47:41,Noa Eriksson,user44@example.com,Uppsala,Uppsala,72216,1988-05-25,Facebook
+45,2024-02-10 08:42:38,Charlie Eriksson,user45@example.com,Uppsala,Uppsala,45992,1988-02-23,Google
+46,2024-01-21 19:39:58,Kim Karlsson,user46@example.com,Malmo,Skane,20561,1968-03-08,Organic
+47,2024-01-27 14:50:24,Robin Johansson,user47@example.com,Stockholm,Stockholm,53369,1994-08-14,Affiliate
+48,2024-02-27 21:15:56,Kim Nilsson,user48@example.com,Uppsala,Uppsala,12560,1996-07-16,Affiliate
+49,2024-02-24 15:15:21,Jamie Karlsson,user49@example.com,Uppsala,Uppsala,80545,1994-10-08,Organic
+50,2024-02-01 01:03:24,Kim Karlsson,user50@example.com,Uppsala,Uppsala,60968,1981-11-22,Organic
