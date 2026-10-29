@@ -9,3 +9,6 @@ scratch/**
 **/explorations/**
 **/!explorations/README.md
 .ai-dev-kit/
+.claude/
+.github/
+.vscode/
