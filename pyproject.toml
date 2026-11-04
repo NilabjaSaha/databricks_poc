@@ -21,9 +21,7 @@ dev = [
     "ipykernel",
     # dbt is not installed here: dbt-databricks 1.12.8 needs protobuf 6.x, the
     # serverless v5 constraints below pin protobuf 5.x. Install dbt and sqlfmt
-    # as uv tools instead (see README.md), matching resources/dbt.job.yml:
-    #   uv tool install --python 3.12 dbt-core --with dbt-databricks==1.12.8
-    #   uv tool install --python 3.12 "shandy-sqlfmt[jinjafmt]==0.32.0"
+    # as a uv tool instead, with versions from requirements-dbt.txt (see README.md).
 ]
 
 [project.scripts]

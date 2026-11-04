@@ -1,0 +1,6 @@
+# dbt tool versions for local development: the single source of truth.
+# Install (see README.md):
+#   uv tool install --python 3.12 dbt-core --with-requirements requirements-dbt.txt --with-executables-from shandy-sqlfmt
+# The pin in resources/dbt.job.yml must match dbt-databricks below.
+dbt-databricks==1.12.8
+shandy-sqlfmt[jinjafmt]==0.32.0

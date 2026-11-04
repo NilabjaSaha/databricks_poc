@@ -21,4 +21,5 @@ resources:
           spec:
             environment_version: "5"
             dependencies:
+              # Must match dbt-databricks in ../requirements-dbt.txt (local dev)
               - dbt-databricks==1.12.8

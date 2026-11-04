@@ -139,8 +139,7 @@ One-time setup, from the project root:
 ```bash
 uv sync --dev
 source .venv/bin/activate
-uv tool install --python 3.12 dbt-core --with dbt-databricks==1.12.8
-uv tool install --python 3.12 "shandy-sqlfmt[jinjafmt]==0.32.0"
+uv tool install --python 3.12 dbt-core --with-requirements requirements-dbt.txt --with-executables-from shandy-sqlfmt
 databricks auth login --host https://adb-7405619838309890.10.azuredatabricks.net
 ```
 

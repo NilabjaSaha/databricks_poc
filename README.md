@@ -21,7 +21,7 @@ were merged from [saquibherman/dbt_core_databricks_demo](https://github.com/saqu
 |---|---|---|
 | Databricks Runtime | 18 LTS (Spark 4.1.0) | Or serverless environment v5 |
 | Python | 3.12 | Required by databricks-connect (`==3.12.*`) |
-| dbt-databricks | 1.12.8 | With dbt-core 1.12.x, installed as a uv tool (not in `.venv`); also pinned in `resources/dbt.job.yml` |
+| dbt-databricks | 1.12.8 | With dbt-core 1.12.x, installed as a uv tool (not in `.venv`); pinned in `requirements-dbt.txt` and `resources/dbt.job.yml` |
 | databricks-connect | 18.0.x | In `.venv`; pinned with the serverless environment v5 constraints in `pyproject.toml` |
 | Databricks CLI | v1.22.1 or later | Used for OAuth login and deployment |
 
@@ -33,13 +33,13 @@ Prerequisites: [uv](https://docs.astral.sh/uv/) and the
 ```bash
 uv sync --dev                        # .venv: databricks-connect, pytest, ruff
 source .venv/bin/activate
-uv tool install --python 3.12 dbt-core --with dbt-databricks==1.12.8
-uv tool install --python 3.12 "shandy-sqlfmt[jinjafmt]==0.32.0"
+uv tool install --python 3.12 dbt-core --with-requirements requirements-dbt.txt --with-executables-from shandy-sqlfmt
 databricks auth login --host https://adb-7405619838309890.10.azuredatabricks.net
 ```
 
-dbt and sqlfmt live in their own uv tool environments (`~/.local/bin/dbt`,
-`~/.local/bin/sqlfmt`) because dbt-databricks 1.12.8 needs protobuf 6.x, while
+Their versions are pinned in `requirements-dbt.txt`. dbt and sqlfmt share one
+uv tool environment (`~/.local/bin/dbt`, `~/.local/bin/sqlfmt`), separate from
+`.venv`, because dbt-databricks 1.12.8 needs protobuf 6.x, while
 the serverless environment v5 constraints in `pyproject.toml` (managed by
 `databricks environments setup-local`) pin protobuf 5.x. For dbt Power User in
 VS Code, set `dbt.dbtPythonPathOverride` to
