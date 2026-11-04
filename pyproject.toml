@@ -38,7 +38,8 @@ packages = ["src"]
 line-length = 120
 
 [tool.sqlfmt]
-exclude = [".venv/**/*", "target/**/*", "dbt_packages/**/*"]
+# src/macros is excluded: whitespace in macro output is significant (e.g. schema names)
+exclude = [".venv/**/*", "target/**/*", "dbt_packages/**/*", "src/macros/**/*"]
 
 [tool.databricks.environment]
 environment_version = "5"

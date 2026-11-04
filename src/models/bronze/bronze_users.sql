@@ -1,10 +1,1 @@
-{{
-    config(
-        tags='contains_pii'
-    )
-}}
-
-SELECT
-* 
-FROM  
-{{source('landing', 'users')}}
+{{ config(tags="contains_pii") }} select * from {{ source("landing", "users") }}
