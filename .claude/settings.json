@@ -1,0 +1,59 @@
+{
+  "enabledPlugins": {
+    "databricks@claude-plugins-official": true
+  },
+  "permissions": {
+    "allow": [
+      "Bash(databricks auth profiles*)",
+      "Bash(databricks auth describe*)",
+      "Bash(databricks current-user me*)",
+      "Bash(databricks bundle validate*)",
+      "Bash(databricks bundle summary*)",
+      "Bash(databricks * list*)",
+      "Bash(databricks * get*)"
+    ],
+    "ask": [
+      "Bash(databricks bundle deploy*)",
+      "Bash(databricks bundle destroy*)",
+      "Bash(databricks bundle run*)",
+      "Bash(databricks bundle deployment *)",
+      "Bash(databricks * create*)",
+      "Bash(databricks * update*)",
+      "Bash(databricks * edit*)",
+      "Bash(databricks * patch*)",
+      "Bash(databricks * set*)",
+      "Bash(databricks * delete*)",
+      "Bash(databricks * remove*)",
+      "Bash(databricks * reset*)",
+      "Bash(databricks * deploy*)",
+      "Bash(databricks * destroy*)",
+      "Bash(databricks * start*)",
+      "Bash(databricks * stop*)",
+      "Bash(databricks * restart*)",
+      "Bash(databricks * run-now*)",
+      "Bash(databricks * submit*)",
+      "Bash(databricks * cancel*)",
+      "Bash(databricks * repair-run*)",
+      "Bash(databricks * import*)",
+      "Bash(databricks * mkdirs*)",
+      "Bash(databricks * move*)",
+      "Bash(databricks * grant*)",
+      "Bash(databricks * bind*)",
+      "Bash(databricks * unbind*)",
+      "Bash(databricks fs cp*)",
+      "Bash(databricks fs mv*)",
+      "Bash(databricks fs rm*)",
+      "Bash(databricks fs mkdir*)",
+      "Bash(databricks sync*)",
+      "Bash(databricks api post*)",
+      "Bash(databricks api put*)",
+      "Bash(databricks api patch*)",
+      "Bash(databricks api delete*)",
+      "Bash(databricks experimental aitools tools query*)",
+      "Bash(dbt build*)",
+      "Bash(dbt run*)",
+      "Bash(dbt seed*)",
+      "Bash(dbt snapshot*)"
+    ]
+  }
+}

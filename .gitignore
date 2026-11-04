@@ -9,7 +9,8 @@ scratch/**
 **/explorations/**
 **/!explorations/README.md
 .ai-dev-kit/
-.claude/
+.claude/*
+!.claude/settings.json
 .github/
 .vscode/
 
