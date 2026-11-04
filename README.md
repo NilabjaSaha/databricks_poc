@@ -21,8 +21,8 @@ were merged from [saquibherman/dbt_core_databricks_demo](https://github.com/saqu
 |---|---|---|
 | Databricks Runtime | 18 LTS (Spark 4.1.0) | Or serverless environment v5 |
 | Python | 3.12 | Required by databricks-connect (`==3.12.*`) |
-| dbt-databricks | 1.12.8 | Pulls in dbt-core 1.12.x; also pinned in `resources/dbt.job.yml` |
-| databricks-connect | 18.3.x | Must not be newer than the compute's DBR version |
+| dbt-databricks | 1.12.8 | With dbt-core 1.12.x, installed as a uv tool (not in `.venv`); also pinned in `resources/dbt.job.yml` |
+| databricks-connect | 18.0.x | In `.venv`; pinned with the serverless environment v5 constraints in `pyproject.toml` |
 | Databricks CLI | v1.22.1 or later | Used for OAuth login and deployment |
 
 ## Setup
@@ -31,10 +31,19 @@ Prerequisites: [uv](https://docs.astral.sh/uv/) and the
 [Databricks CLI](https://docs.databricks.com/dev-tools/cli/install).
 
 ```bash
-uv sync --dev
+uv sync --dev                        # .venv: databricks-connect, pytest, ruff
 source .venv/bin/activate
+uv tool install --python 3.12 dbt-core --with dbt-databricks==1.12.8
+uv tool install --python 3.12 "shandy-sqlfmt[jinjafmt]==0.32.0"
 databricks auth login --host https://adb-7405619838309890.10.azuredatabricks.net
 ```
+
+dbt and sqlfmt live in their own uv tool environments (`~/.local/bin/dbt`,
+`~/.local/bin/sqlfmt`) because dbt-databricks 1.12.8 needs protobuf 6.x, while
+the serverless environment v5 constraints in `pyproject.toml` (managed by
+`databricks environments setup-local`) pin protobuf 5.x. For dbt Power User in
+VS Code, set `dbt.dbtPythonPathOverride` to
+`~/.local/share/uv/tools/dbt-core/bin/python`.
 
 Do not install `pyspark` separately; it conflicts with `databricks-connect`.
 
@@ -59,7 +68,8 @@ for example in a git-ignored `.env` file.
 In the `dev` target, objects are written to `<you>_landing`, `<you>_bronze`,
 `<you>_silver` and `<you>_gold` (e.g. `nilabja_saha_bronze`) in the
 `dbw_dbxpoc_sbx_weu` catalog, so developers don't overwrite each other. The
-`prod` target writes to `landing`, `bronze`, `silver` and `gold`. See
+`prod` target runs in the prod workspace and writes to `landing`, `bronze`,
+`silver` and `gold` in the `dbw_dbxpoc_prod_weu` catalog. See
 `src/macros/generate_schema_name.sql`.
 
 Format SQL with `sqlfmt src/`.
