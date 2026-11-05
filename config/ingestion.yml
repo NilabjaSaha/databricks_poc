@@ -1,0 +1,84 @@
+# Metadata-driven ingestion config.
+# One entry per source. Paths are RELATIVE to the landing root,
+# which is set per environment in databricks.yml (volume today, ADLS later).
+# Field reference: docs/ingestion-framework.md
+version: 1
+
+sources:
+  - name: orders
+    source_system: shop
+    path: shop/orders/
+    format: csv
+    options:
+      header: "true"
+    # Column names and types match the dbt seeds (src/seeds/landing/), so the
+    # dbt source `landing` and all downstream models keep working unchanged.
+    schema_hints: "id BIGINT, created_at TIMESTAMP, user_id BIGINT, product_id BIGINT, quantity BIGINT, unit_price DECIMAL(10,2)"
+    target_table: orders                      # in the landing schema of the target
+    expectations:
+      drop:                                   # bad rows are removed
+        id_not_null: "id IS NOT NULL"
+      warn:                                   # rows kept, violation counted
+        quantity_positive: "quantity > 0"
+        unit_price_non_negative: "unit_price >= 0"
+      fail: {}                                # pipeline stops (use rarely)
+    pii_columns: []
+    tags:
+      domain: sales
+
+  - name: products
+    source_system: shop
+    path: shop/products/
+    format: csv
+    options:
+      header: "true"
+    schema_hints: "id BIGINT, created_at TIMESTAMP, title STRING, category STRING, ean STRING, vendor STRING, price DECIMAL(10,2)"
+    target_table: products
+    expectations:
+      drop:
+        id_not_null: "id IS NOT NULL"
+      warn:
+        price_non_negative: "price >= 0"
+        title_present: "title IS NOT NULL"
+      fail: {}
+    pii_columns: []
+    tags:
+      domain: catalog
+
+  - name: reviews
+    source_system: shop
+    path: shop/reviews/
+    format: csv
+    options:
+      header: "true"
+    schema_hints: "id BIGINT, created_at TIMESTAMP, reviewer STRING, product_id BIGINT, rating INT, body STRING"
+    target_table: reviews
+    expectations:
+      drop:
+        id_not_null: "id IS NOT NULL"
+      warn:
+        rating_in_range: "rating BETWEEN 1 AND 5"
+        product_id_present: "product_id IS NOT NULL"
+      fail: {}
+    pii_columns: [reviewer]
+    tags:
+      domain: sales
+
+  - name: users
+    source_system: shop
+    path: shop/users/
+    format: csv
+    options:
+      header: "true"
+    schema_hints: "id BIGINT, created_at TIMESTAMP, name STRING, email STRING, city STRING, state STRING, zip STRING, birth_date DATE, source STRING"
+    target_table: users
+    expectations:
+      drop:
+        id_not_null: "id IS NOT NULL"
+      warn:
+        email_has_at: "email LIKE '%@%'"
+        birth_date_in_past: "birth_date < current_date()"
+      fail: {}
+    pii_columns: [name, email, zip, birth_date]
+    tags:
+      domain: customers

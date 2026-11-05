@@ -32,6 +32,9 @@ jobs:
           uv tool install --python 3.12 dbt-core --with-requirements requirements-dbt.txt --with-executables-from shandy-sqlfmt
           uv tool dir --bin >> "$GITHUB_PATH"
 
+      - name: Validate ingestion config
+        run: uv run scripts/validate_ingestion_config.py config/ingestion.yml
+
       - name: sqlfmt --check
         run: sqlfmt --check src/
 
