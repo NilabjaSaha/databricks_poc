@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    name: ci
+    runs-on: ubuntu-latest
+    env:
+      # Dummy values so dbt can render profiles.yml offline; parse never connects.
+      DBT_ACCESS_TOKEN: dummy
+      DBT_DEV_SCHEMA: ci
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up uv and Python 3.12
+        uses: astral-sh/setup-uv@v10.3.3
+        with:
+          python-version: "3.12"
+
+      - name: Install dbt and sqlfmt (versions from requirements-dbt.txt)
+        run: |
+          uv tool install --python 3.12 dbt-core --with-requirements requirements-dbt.txt --with-executables-from shandy-sqlfmt
+          uv tool dir --bin >> "$GITHUB_PATH"
+
+      - name: sqlfmt --check
+        run: sqlfmt --check src/
+
+      - name: dbt deps
+        run: dbt deps
+
+      - name: dbt parse (dev)
+        run: dbt parse --target dev
+
+      - name: dbt parse (prod)
+        run: dbt parse --target prod
