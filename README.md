@@ -69,8 +69,14 @@ In the `dev` target, objects are written to `<you>_landing`, `<you>_bronze`,
 `<you>_silver` and `<you>_gold` (e.g. `nilabja_saha_bronze`) in the
 `dbw_dbxpoc_sbx_weu` catalog, so developers don't overwrite each other. The
 `prod` target runs in the prod workspace and writes to `landing`, `bronze`,
-`silver` and `gold` in the `dbw_dbxpoc_prod_weu` catalog. See
-`src/macros/generate_schema_name.sql`.
+`silver` and `gold` in `dbw_dbxpoc_prd_sbx_weu`, the prod workspace's default
+catalog. See `src/macros/generate_schema_name.sql`.
+
+Grants on the prod catalog: the CD service principal `sp-dbxpoc-cicd` has
+`USE CATALOG`, `USE SCHEMA` and `CREATE SCHEMA`; nilabja.saha@knowit.se has
+`ALL PRIVILEGES` and `MANAGE`; saquib.herman@knowit.se is read-only. The earlier
+prod catalog `dbw_dbxpoc_prod_weu` is deprecated and will be dropped after the
+first successful CD run on `dbw_dbxpoc_prd_sbx_weu`.
 
 Format SQL with `sqlfmt src/`.
 

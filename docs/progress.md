@@ -3,7 +3,7 @@
 Status of the `databricks_poc` project: a Declarative Automation Bundle (DAB)
 that deploys a dbt Core project to Databricks.
 
-Last updated: 2026-11-05. Workspace facts (jobs, runs, warehouses, catalog
+Last updated: 2026-11-05 (prod catalog switch). Workspace facts (jobs, runs, warehouses, catalog
 bindings and grants) were checked on 2026-11-04; the service principal, its
 access and the prod schemas on 2026-11-05.
 
@@ -44,8 +44,10 @@ The first prod run in the prod workspace (run 754759551858732) succeeded on
 2026-11-04. That manual prod deployment was then destroyed so CI can own prod:
 `databricks bundle summary -t prod` shows `dbt_job` as not deployed, the prod
 workspace has no jobs, and its `.bundle/databricks_poc/prod` folder is gone.
-As of 2026-11-05 the prod schemas (`landing`, `bronze`, `silver`, `gold`) no
-longer exist in `dbw_dbxpoc_prod_weu`; the first CD run creates them, owned by
+On 2026-11-05 CD run `#42034493138` (after PRs #1 and #2) succeeded and built
+prod into `dbw_dbxpoc_prod_weu`. Prod now uses the prod workspace's default
+catalog `dbw_dbxpoc_prd_sbx_weu` instead, which so far holds only `default`; the
+next CD run creates `landing`, `bronze`, `silver` and `gold` there, owned by
 `sp-dbxpoc-cicd`.
 
 ### CI/CD (GitHub Actions, `.github/workflows/`)
@@ -67,8 +69,9 @@ access to user folders.
 Service principal `sp-dbxpoc-cicd` (application ID
 `e33d9717-3d53-4d8d-a39c-f1b2ff4512dc`), as of 2026-11-05: active, no groups,
 entitlements `workspace-access`, `databricks-sql-access`, `workspace-consume`;
-`CAN_USE` on `wh-dbxpoc-prd-2xs`; `USE_CATALOG`, `USE_SCHEMA`, `CREATE_SCHEMA`
-on `dbw_dbxpoc_prod_weu`.
+`CAN_USE` on `wh-dbxpoc-prd-2xs`; `USE CATALOG`, `USE SCHEMA`, `CREATE SCHEMA`
+on the prod catalog `dbw_dbxpoc_prd_sbx_weu` (and on the deprecated
+`dbw_dbxpoc_prod_weu`).
 
 ### dbt project (`dbt_project.yml`, `src/`)
 
@@ -103,7 +106,7 @@ builds the schema names.
 | Target | Catalog | Schemas | Example |
 |---|---|---|---|
 | dev (local and deployed) | `dbw_dbxpoc_sbx_weu` | `<user>_landing`, `<user>_bronze`, `<user>_silver`, `<user>_gold` | `nilabja_saha_bronze` |
-| prod | `dbw_dbxpoc_prod_weu` | `landing`, `bronze`, `silver`, `gold` | `dbw_dbxpoc_prod_weu.gold.gold_sales__daily` |
+| prod | `dbw_dbxpoc_prd_sbx_weu` | `landing`, `bronze`, `silver`, `gold` | `dbw_dbxpoc_prd_sbx_weu.gold.gold_sales__daily` |
 
 `<user>` is the part of the user name before `@`, with non-word characters
 replaced by `_`. Locally `scripts/dbt_env.sh` sets it as `DBT_DEV_SCHEMA`; the
@@ -114,8 +117,8 @@ Catalogs on the metastore that matter here:
 | Catalog | Created | Owner | Isolation and bindings |
 |---|---|---|---|
 | `dbw_dbxpoc_sbx_weu` | with the dev workspace | dev workspace admins | `ISOLATED`; dev (`7405619838309890`) read-write, prod (`7405615711496172`) read-only. `USE CATALOG`, `USE SCHEMA` and `SELECT` granted directly to nilabja.saha@knowit.se and saquib.herman@knowit.se |
-| `dbw_dbxpoc_prod_weu` | 2026-10-29, SQL `CREATE CATALOG` from dev (the REST API refuses catalogs on Default Storage) | nilabja.saha@knowit.se | `ISOLATED`; prod (`7405615711496172`) read-write, dev (`7405619838309890`) read-only |
-| `dbw_dbxpoc_prd_sbx_weu` | with the prod workspace (its default catalog) | prod workspace admins | `ISOLATED`; prod read-write, dev read-only. `USE CATALOG`, `USE SCHEMA` and `SELECT` granted directly to nilabja.saha@knowit.se and saquib.herman@knowit.se |
+| `dbw_dbxpoc_prd_sbx_weu` (**prod**) | with the prod workspace (its default catalog) | prod workspace admins | `ISOLATED`; prod (`7405615711496172`) read-write, dev (`7405619838309890`) read-only. Grants: `sp-dbxpoc-cicd`: `USE CATALOG`, `USE SCHEMA`, `CREATE SCHEMA`; nilabja.saha@knowit.se: `ALL PRIVILEGES` + `MANAGE`; saquib.herman@knowit.se: read-only (`USE CATALOG`, `USE SCHEMA`, `SELECT`); prod workspace users: `USE CATALOG` |
+| `dbw_dbxpoc_prod_weu` (**deprecated**) | 2026-10-29, SQL `CREATE CATALOG` from dev (the REST API refuses catalogs on Default Storage) | nilabja.saha@knowit.se | `ISOLATED`; prod read-write, dev read-only. No longer used; to be dropped after the first successful CD run on `dbw_dbxpoc_prd_sbx_weu` |
 
 ### Cross-workspace access
 
@@ -125,8 +128,8 @@ its own.
 
 | From workspace | Catalog | Access | Through |
 |---|---|---|---|
-| dev → prod | `dbw_dbxpoc_prod_weu` | read-only | read-only binding |
-| dev → prod | `dbw_dbxpoc_prd_sbx_weu` | read-only | read-only binding; `USE CATALOG`, `USE SCHEMA`, `SELECT` granted to nilabja.saha@knowit.se and saquib.herman@knowit.se |
+| dev → prod | `dbw_dbxpoc_prd_sbx_weu` | read-only | read-only binding; grants to nilabja.saha@knowit.se and saquib.herman@knowit.se (see above) |
+| dev → prod | `dbw_dbxpoc_prod_weu` (deprecated) | read-only | read-only binding |
 | prod → dev | `dbw_dbxpoc_sbx_weu` | read-only | read-only binding; `USE CATALOG`, `USE SCHEMA`, `SELECT` granted to nilabja.saha@knowit.se and saquib.herman@knowit.se |
 
 A read-only binding blocks writes from that workspace whatever the grants say.
@@ -228,18 +231,20 @@ under `~/.vscode-server/extensions/anthropic.claude-code-*/resources/native-bina
   constraints kept for `.venv`, dbt and sqlfmt moved to uv tools.
 - 2026-11-05: Prod `run_as` set to `sp-dbxpoc-cicd`; prod `root_path` follows
   the deploying identity; GitHub Actions CI (`ci`) and prod CD (`deploy-prod`)
-  added.
+  added (PR #1), with the service principal in the prod bundle permissions
+  (PR #2). First successful CD run: `#42034493138`, into `dbw_dbxpoc_prod_weu`.
+- 2026-11-05: Prod catalog switched to `dbw_dbxpoc_prd_sbx_weu`, the prod
+  workspace's default catalog; `dbw_dbxpoc_prod_weu` deprecated.
 
 ## Open issues
 
-1. **Unpushed commits.** `main` is several commits ahead of GitHub.
-2. **CD not live yet.** The workflows are on branch `feat/cicd`, not pushed.
-   Before the first CD run, GitHub needs: the `prod` environment with required
-   reviewers, the variable `DATABRICKS_HOST` and the secrets
-   `DATABRICKS_CLIENT_ID` / `DATABRICKS_CLIENT_SECRET` (an OAuth secret for
-   `sp-dbxpoc-cicd`), and branch protection on `main` requiring `ci`. The
-   service principal also needs `SELECT`/`MODIFY` or ownership on any prod
-   objects it did not create.
+1. **Deprecated catalog still exists.** `dbw_dbxpoc_prod_weu` still holds the
+   data from CD run `#42034493138`. Drop it after the first successful CD run
+   on `dbw_dbxpoc_prd_sbx_weu`.
+2. **`ci` is not a required check.** The `protect-main` ruleset requires pull
+   requests and blocks deletion and force pushes, but does not require the `ci`
+   status check. (The `prod` environment, its required reviewers, the variable
+   `DATABRICKS_HOST` and the two secrets are set up.)
 3. **Sample data in prod.** The job runs `dbt seed` in every target, so prod's
    `landing` schema holds generated sample data, not real data.
 4. **Two sources of truth for catalog and schema.** The bundle variables
@@ -259,9 +264,10 @@ under `~/.vscode-server/extensions/anthropic.claude-code-*/resources/native-bina
 
 ## Next steps
 
-1. Set up the GitHub `prod` environment, variable, secrets and branch
-   protection (open issue 2), then push `feat/cicd` and open a pull request.
-2. Merge to `main` and approve the first CD run.
+1. Merge the prod catalog switch and approve its CD run; check that
+   `dbw_dbxpoc_prd_sbx_weu` has `landing`, `bronze`, `silver`, `gold`.
+2. Drop `dbw_dbxpoc_prod_weu`, and add `ci` as a required check in
+   `protect-main`.
 3. Replace prod's seeded landing data with a real ingestion path, and remove
    `dbt seed` (or limit it to `product_categories`) in the prod job.
 4. Make `profiles.yml` the only place catalog and schema are set: remove the

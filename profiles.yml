@@ -22,7 +22,7 @@ databricks_poc:
       type: databricks
       host: "{{ env_var('DBT_HOST', 'adb-7405615711496172.12.azuredatabricks.net') }}"
       http_path: /sql/1.0/warehouses/7e4c13089dc9ec4a
-      catalog: dbw_dbxpoc_prod_weu
+      catalog: dbw_dbxpoc_prd_sbx_weu
       schema: default
       token: "{{ env_var('DBT_ACCESS_TOKEN', '') or env_var('DATABRICKS_TOKEN') }}"
       threads: 4
