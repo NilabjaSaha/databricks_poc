@@ -48,8 +48,6 @@ Project status, open issues and next steps: [docs/progress.md](docs/progress.md)
 - Prod catalog grants: `sp-dbxpoc-cicd` has `USE CATALOG`, `USE SCHEMA`,
   `CREATE SCHEMA`; nilabja.saha@knowit.se has `ALL PRIVILEGES` + `MANAGE`;
   saquib.herman@knowit.se is read-only.
-- `dbw_dbxpoc_prod_weu` is deprecated: don't use it. It will be dropped after
-  the first successful CD run on `dbw_dbxpoc_prd_sbx_weu`.
 - dbt reads catalogs from `profiles.yml`; `src/macros/generate_schema_name.sql`
   builds the schema names. Change both together.
 - Don't hardcode catalog or schema names in models; use `ref()`, `source()` and
