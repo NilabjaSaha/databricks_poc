@@ -40,7 +40,7 @@ targets:
       # Prod jobs run as the CI service principal, never as a person.
       service_principal_name: e33d9717-3d53-4d8d-a39c-f1b2ff4512dc  
     variables:
-      catalog: dbw_dbxpoc_prod_weu
+      catalog: dbw_dbxpoc_prd_sbx_weu
       schema: prod
     permissions:
       - service_principal_name: e33d9717-3d53-4d8d-a39c-f1b2ff4512dc   # sp-dbxpoc-cicd (deploys and runs prod)
