@@ -3,8 +3,9 @@
 Status of the `databricks_poc` project: a Declarative Automation Bundle (DAB)
 that deploys a dbt Core project to Databricks.
 
-Last updated: 2026-11-04. Workspace facts (jobs, runs, warehouses, catalog
-bindings and grants) were checked on 2026-11-04.
+Last updated: 2026-11-05. Workspace facts (jobs, runs, warehouses, catalog
+bindings and grants) were checked on 2026-11-04; the service principal, its
+access and the prod schemas on 2026-11-05.
 
 ## What's built
 
@@ -29,7 +30,8 @@ minutes, 1–1 clusters and tags `project=dbxpoc`, `env=prod`.
 There are no pipelines, dashboards or apps. `src/notebook.ipynb` is the
 template's "Hello world" notebook and is not part of any job.
 
-The job has no schedule or trigger.
+The job has no schedule or trigger. In prod it runs as the service principal
+`sp-dbxpoc-cicd` (`run_as` in `databricks.yml`).
 
 Deployed jobs (as of 2026-11-04):
 
@@ -42,7 +44,31 @@ The first prod run in the prod workspace (run 754759551858732) succeeded on
 2026-11-04. That manual prod deployment was then destroyed so CI can own prod:
 `databricks bundle summary -t prod` shows `dbt_job` as not deployed, the prod
 workspace has no jobs, and its `.bundle/databricks_poc/prod` folder is gone.
-The data written by that run stays in `dbw_dbxpoc_prod_weu`.
+As of 2026-11-05 the prod schemas (`landing`, `bronze`, `silver`, `gold`) no
+longer exist in `dbw_dbxpoc_prod_weu`; the first CD run creates them, owned by
+`sp-dbxpoc-cicd`.
+
+### CI/CD (GitHub Actions, `.github/workflows/`)
+
+| Workflow | Job | Trigger | What it does |
+|---|---|---|---|
+| `ci.yml` | `ci` | pull request to `main`, manual | Installs dbt and sqlfmt from `requirements-dbt.txt`; `sqlfmt --check src/`; `dbt deps`; `dbt parse` for `dev` and `prod`, offline with dummy values. No secrets, `contents: read`. |
+| `cd.yml` | `deploy-prod` | push to `main`, manual | Waits for approval on the GitHub environment `prod`; Databricks CLI 1.22.1; writes the `dbxpoc-prd` profile for `sp-dbxpoc-cicd` (OAuth M2M) from `vars.DATABRICKS_HOST` and `secrets.DATABRICKS_CLIENT_ID` / `DATABRICKS_CLIENT_SECRET`; `bundle validate --strict`, `bundle deploy`, `bundle run dbt_job` for `prod`; step summary. Concurrency group `prod-deploy`, never cancelled. |
+
+Prod is deployed only by CD: merge to `main` → approval on the `prod`
+environment → deploy and run as `sp-dbxpoc-cicd`. **Prod must not be deployed
+from laptops any more.**
+
+The prod `root_path` is `/Workspace/Users/${workspace.current_user.userName}/.bundle/...`,
+which for CD is the service principal's own folder. A fixed path in a user's
+folder would fail: the service principal is not a workspace admin and has no
+access to user folders.
+
+Service principal `sp-dbxpoc-cicd` (application ID
+`e33d9717-3d53-4d8d-a39c-f1b2ff4512dc`), as of 2026-11-05: active, no groups,
+entitlements `workspace-access`, `databricks-sql-access`, `workspace-consume`;
+`CAN_USE` on `wh-dbxpoc-prd-2xs`; `USE_CATALOG`, `USE_SCHEMA`, `CREATE_SCHEMA`
+on `dbw_dbxpoc_prod_weu`.
 
 ### dbt project (`dbt_project.yml`, `src/`)
 
@@ -164,8 +190,8 @@ databricks bundle deploy -t dev
 databricks bundle run dbt_job -t dev
 ```
 
-Prod uses the same commands with `-t prod`. Deploy to prod only when that has
-been explicitly agreed (see the conventions in `AGENTS.md`).
+Prod is deployed only by CD (see "CI/CD" above), never from a laptop. Locally,
+`databricks bundle validate --strict -t prod` is still fine.
 
 VS Code (local `.vscode/settings.json`, not committed):
 `dbt.dbtPythonPathOverride` points at
@@ -200,12 +226,20 @@ under `~/.vscode-server/extensions/anthropic.claude-code-*/resources/native-bina
   deployment was then destroyed so CI can own prod.
 - 2026-11-04: Dependency lock conflict fixed: serverless environment v5
   constraints kept for `.venv`, dbt and sqlfmt moved to uv tools.
+- 2026-11-05: Prod `run_as` set to `sp-dbxpoc-cicd`; prod `root_path` follows
+  the deploying identity; GitHub Actions CI (`ci`) and prod CD (`deploy-prod`)
+  added.
 
 ## Open issues
 
 1. **Unpushed commits.** `main` is several commits ahead of GitHub.
-2. **No CI deploys prod yet.** The manual prod deployment was destroyed, so
-   nothing runs prod until CI is in place.
+2. **CD not live yet.** The workflows are on branch `feat/cicd`, not pushed.
+   Before the first CD run, GitHub needs: the `prod` environment with required
+   reviewers, the variable `DATABRICKS_HOST` and the secrets
+   `DATABRICKS_CLIENT_ID` / `DATABRICKS_CLIENT_SECRET` (an OAuth secret for
+   `sp-dbxpoc-cicd`), and branch protection on `main` requiring `ci`. The
+   service principal also needs `SELECT`/`MODIFY` or ownership on any prod
+   objects it did not create.
 3. **Sample data in prod.** The job runs `dbt seed` in every target, so prod's
    `landing` schema holds generated sample data, not real data.
 4. **Two sources of truth for catalog and schema.** The bundle variables
@@ -220,12 +254,14 @@ under `~/.vscode-server/extensions/anthropic.claude-code-*/resources/native-bina
    `tests/` has only `conftest.py`.
 9. **Unused prod warehouse:** `dbx_poc` (`7aba3a527638a7ac`) in the prod
    workspace is stopped and not referenced.
+10. **CI does not validate the bundle.** `databricks bundle validate` needs
+    workspace auth, and CI uses no secrets; CD validates before deploying.
 
 ## Next steps
 
-1. Push the local commits.
-2. Set up CI to validate and deploy the bundle, with prod deployed only from
-   CI (see also step 8).
+1. Set up the GitHub `prod` environment, variable, secrets and branch
+   protection (open issue 2), then push `feat/cicd` and open a pull request.
+2. Merge to `main` and approve the first CD run.
 3. Replace prod's seeded landing data with a real ingestion path, and remove
    `dbt seed` (or limit it to `product_categories`) in the prod job.
 4. Make `profiles.yml` the only place catalog and schema are set: remove the
@@ -234,8 +270,4 @@ under `~/.vscode-server/extensions/anthropic.claude-code-*/resources/native-bina
    `dbt_env.sh`.
 6. Add a schedule (paused automatically in dev) and failure email notifications
    to `dbt_job`.
-7. Run prod as a service principal instead of a user, and grant it access to
-   the prod catalog.
-8. Add CI checks: `databricks bundle validate --strict`, `dbt parse`,
-   `sqlfmt --check`.
-9. Remove the unused Python scaffolding, or add real Python code and tests.
+7. Remove the unused Python scaffolding, or add real Python code and tests.

@@ -33,8 +33,9 @@ targets:
     workspace:
       host: https://adb-7405615711496172.12.azuredatabricks.net 
       profile: dbxpoc-prd                                          # pin the prod profile
-      # We explicitly deploy to /Workspace/Users/nilabja.saha@knowit.se to make sure we only have a single copy.
-      root_path: /Workspace/Users/nilabja.saha@knowit.se/.bundle/${bundle.name}/${bundle.target}
+      # Deployed by CD as sp-dbxpoc-cicd, so this resolves to the service principal's
+      # own folder (its application ID), which it can write to.
+      root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target}
     run_as:
       # Prod jobs run as the CI service principal, never as a person.
       service_principal_name: e33d9717-3d53-4d8d-a39c-f1b2ff4512dc  

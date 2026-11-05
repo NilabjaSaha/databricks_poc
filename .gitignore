@@ -11,7 +11,8 @@ scratch/**
 .ai-dev-kit/
 .claude/*
 !.claude/settings.json
-.github/
+.github/*
+!.github/workflows/
 .vscode/
 
 # dbt

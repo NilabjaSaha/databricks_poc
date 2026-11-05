@@ -1,0 +1,75 @@
+name: CD
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: prod-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy-prod:
+    name: deploy-prod
+    runs-on: ubuntu-latest
+    # Required reviewers on the "prod" environment gate this job.
+    environment: prod
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Databricks CLI
+        uses: databricks/setup-cli@v1.22.1
+        with:
+          version: 1.22.1
+
+      # databricks.yml pins the prod target to the profile "dbxpoc-prd".
+      # Authenticates as sp-dbxpoc-cicd (OAuth machine-to-machine).
+      - name: Configure Databricks profile dbxpoc-prd
+        env:
+          DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
+          DATABRICKS_CLIENT_ID: ${{ secrets.DATABRICKS_CLIENT_ID }}
+          DATABRICKS_CLIENT_SECRET: ${{ secrets.DATABRICKS_CLIENT_SECRET }}
+        run: |
+          umask 077
+          {
+            echo "[dbxpoc-prd]"
+            echo "host          = ${DATABRICKS_HOST}"
+            echo "auth_type     = oauth-m2m"
+            echo "client_id     = ${DATABRICKS_CLIENT_ID}"
+            echo "client_secret = ${DATABRICKS_CLIENT_SECRET}"
+          } > ~/.databrickscfg
+
+      - name: Validate bundle (prod)
+        id: validate
+        run: databricks bundle validate --strict -t prod
+
+      - name: Deploy bundle (prod)
+        id: deploy
+        run: databricks bundle deploy -t prod
+
+      - name: Run dbt_job (prod)
+        id: run
+        run: databricks bundle run dbt_job -t prod
+
+      - name: Job summary
+        if: always()
+        env:
+          VALIDATE: ${{ steps.validate.outcome }}
+          DEPLOY: ${{ steps.deploy.outcome }}
+          RUN: ${{ steps.run.outcome }}
+          RESULT: ${{ job.status }}
+        run: |
+          {
+            echo "## Prod deployment"
+            echo ""
+            echo "| Target | Validate | Deploy | Run dbt_job | Result |"
+            echo "|---|---|---|---|---|"
+            echo "| prod | ${VALIDATE:-skipped} | ${DEPLOY:-skipped} | ${RUN:-skipped} | ${RESULT} |"
+          } >> "$GITHUB_STEP_SUMMARY"

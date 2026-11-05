@@ -86,12 +86,44 @@ The deployed dev job uses the same `profiles.yml` and your user name as the dev
 schema, so it builds into the same schemas as your local runs. Databricks
 injects `DBT_HOST` and `DBT_ACCESS_TOKEN` into the job.
 
-For production:
+Production is deployed only by CD (see below), never from a laptop.
 
-```bash
-databricks bundle deploy --target prod
-databricks bundle run dbt_job --target prod
-```
+## CI/CD
+
+GitHub Actions workflows live in `.github/workflows/`.
+
+**CI** (`ci.yml`, job `ci`) runs on every pull request to `main` and on manual
+dispatch. It uses no secrets and only reads the repository:
+
+1. Installs dbt and sqlfmt from `requirements-dbt.txt`, as in Setup.
+2. `sqlfmt --check src/`.
+3. `dbt deps`, then `dbt parse` for the `dev` and `prod` targets, offline with
+   dummy values (`DBT_ACCESS_TOKEN=dummy`, `DBT_DEV_SCHEMA=ci`).
+
+Require the `ci` check in branch protection for `main`.
+
+**CD** (`cd.yml`, job `deploy-prod`) runs on every push to `main` and on manual
+dispatch:
+
+1. Waits for approval on the GitHub environment `prod`.
+2. Installs Databricks CLI 1.22.1 and writes the `dbxpoc-prd` profile (the name
+   `databricks.yml` pins) for the service principal `sp-dbxpoc-cicd`, using
+   OAuth machine-to-machine.
+3. `databricks bundle validate --strict -t prod`, `databricks bundle deploy -t prod`,
+   `databricks bundle run dbt_job -t prod`.
+4. Writes a summary of each step's result to the run page.
+
+Only one prod deployment runs at a time (concurrency group `prod-deploy`, queued,
+not cancelled). The prod job runs as `sp-dbxpoc-cicd` (`run_as` in
+`databricks.yml`).
+
+GitHub settings CD needs, in the `prod` environment:
+
+| Kind | Name | Value |
+|---|---|---|
+| Variable | `DATABRICKS_HOST` | `https://adb-7405615711496172.12.azuredatabricks.net` |
+| Secret | `DATABRICKS_CLIENT_ID` | application ID of `sp-dbxpoc-cicd` |
+| Secret | `DATABRICKS_CLIENT_SECRET` | an OAuth secret of `sp-dbxpoc-cicd` |
 
 ## Python tests
 

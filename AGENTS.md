@@ -63,8 +63,8 @@ Project status, open issues and next steps: [docs/progress.md](docs/progress.md)
 
 ### Deployment
 
-- **Deploy and run to `dev` only**, unless the user explicitly asks for
-  `prod` in that request.
+- **Deploy and run to `dev` only.** Prod is deployed only by CD
+  (`.github/workflows/cd.yml`, as `sp-dbxpoc-cicd`), never from a laptop.
 - Run `databricks bundle validate --strict -t <target>` before every deploy.
 - Don't create, change or delete workspace resources (catalogs, schemas,
   grants, warehouses, jobs) outside the bundle without asking first.
