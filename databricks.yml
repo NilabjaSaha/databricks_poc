@@ -43,5 +43,9 @@ targets:
       catalog: dbw_dbxpoc_prod_weu
       schema: prod
     permissions:
+      - service_principal_name: e33d9717-3d53-4d8d-a39c-f1b2ff4512dc   # sp-dbxpoc-cicd (deploys and runs prod)
+        level: CAN_MANAGE
       - user_name: nilabja.saha@knowit.se
         level: CAN_MANAGE
+      - user_name: saquib.herman@knowit.se
+        level: CAN_VIEW
