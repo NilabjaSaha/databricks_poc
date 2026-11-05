@@ -35,6 +35,9 @@ targets:
       profile: dbxpoc-prd                                          # pin the prod profile
       # We explicitly deploy to /Workspace/Users/nilabja.saha@knowit.se to make sure we only have a single copy.
       root_path: /Workspace/Users/nilabja.saha@knowit.se/.bundle/${bundle.name}/${bundle.target}
+    run_as:
+      # Prod jobs run as the CI service principal, never as a person.
+      service_principal_name: e33d9717-3d53-4d8d-a39c-f1b2ff4512dc  
     variables:
       catalog: dbw_dbxpoc_prod_weu
       schema: prod
