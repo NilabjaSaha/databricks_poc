@@ -3,7 +3,7 @@
 Status of the `databricks_poc` project: a Declarative Automation Bundle (DAB)
 that deploys a dbt Core project to Databricks.
 
-Last updated: 2026-11-05 (prod catalog switch). Workspace facts (jobs, runs, warehouses, catalog
+Last updated: 2026-11-05 (old prod catalog dropped). Workspace facts (jobs, runs, warehouses, catalog
 bindings and grants) were checked on 2026-11-04; the service principal, its
 access and the prod schemas on 2026-11-05.
 
@@ -51,10 +51,9 @@ The first prod run in the prod workspace (run 754759551858732) succeeded on
 2026-11-04. That manual prod deployment was then destroyed so CI can own prod:
 `databricks bundle summary -t prod` shows `dbt_job` as not deployed, the prod
 workspace has no jobs, and its `.bundle/databricks_poc/prod` folder is gone.
-On 2026-11-05 CD run `#42034493138` (after PRs #1 and #2) succeeded and built
-prod into `dbw_dbxpoc_prod_weu`. Prod now uses the prod workspace's default
-catalog `dbw_dbxpoc_prd_sbx_weu` instead, which so far holds only `default`; the
-next CD run creates `landing`, `bronze`, `silver` and `gold` there, owned by
+Since PR #3, prod uses the prod workspace's default catalog
+`dbw_dbxpoc_prd_sbx_weu`. CD run `#42041046902` (2026-11-05) succeeded and
+created `landing`, `bronze`, `silver` and `gold` there, owned by
 `sp-dbxpoc-cicd`.
 
 ### CI/CD (GitHub Actions, `.github/workflows/`)
@@ -77,8 +76,7 @@ Service principal `sp-dbxpoc-cicd` (application ID
 `e33d9717-3d53-4d8d-a39c-f1b2ff4512dc`), as of 2026-11-05: active, no groups,
 entitlements `workspace-access`, `databricks-sql-access`, `workspace-consume`;
 `CAN_USE` on `wh-dbxpoc-prd-2xs`; `USE CATALOG`, `USE SCHEMA`, `CREATE SCHEMA`
-on the prod catalog `dbw_dbxpoc_prd_sbx_weu` (and on the deprecated
-`dbw_dbxpoc_prod_weu`).
+on the prod catalog `dbw_dbxpoc_prd_sbx_weu`.
 
 ### dbt project (`dbt_project.yml`, `src/`)
 
@@ -125,7 +123,6 @@ Catalogs on the metastore that matter here:
 |---|---|---|---|
 | `dbw_dbxpoc_sbx_weu` | with the dev workspace | dev workspace admins | `ISOLATED`; dev (`7405619838309890`) read-write, prod (`7405615711496172`) read-only. `USE CATALOG`, `USE SCHEMA` and `SELECT` granted directly to nilabja.saha@knowit.se and saquib.herman@knowit.se |
 | `dbw_dbxpoc_prd_sbx_weu` (**prod**) | with the prod workspace (its default catalog) | prod workspace admins | `ISOLATED`; prod (`7405615711496172`) read-write, dev (`7405619838309890`) read-only. Grants: `sp-dbxpoc-cicd`: `USE CATALOG`, `USE SCHEMA`, `CREATE SCHEMA`; nilabja.saha@knowit.se: `ALL PRIVILEGES` + `MANAGE`; saquib.herman@knowit.se: read-only (`USE CATALOG`, `USE SCHEMA`, `SELECT`); prod workspace users: `USE CATALOG` |
-| `dbw_dbxpoc_prod_weu` (**deprecated**) | 2026-10-29, SQL `CREATE CATALOG` from dev (the REST API refuses catalogs on Default Storage) | nilabja.saha@knowit.se | `ISOLATED`; prod read-write, dev read-only. No longer used; to be dropped after the first successful CD run on `dbw_dbxpoc_prd_sbx_weu` |
 
 ### Cross-workspace access
 
@@ -136,7 +133,6 @@ its own.
 | From workspace | Catalog | Access | Through |
 |---|---|---|---|
 | dev → prod | `dbw_dbxpoc_prd_sbx_weu` | read-only | read-only binding; grants to nilabja.saha@knowit.se and saquib.herman@knowit.se (see above) |
-| dev → prod | `dbw_dbxpoc_prod_weu` (deprecated) | read-only | read-only binding |
 | prod → dev | `dbw_dbxpoc_sbx_weu` | read-only | read-only binding; `USE CATALOG`, `USE SCHEMA`, `SELECT` granted to nilabja.saha@knowit.se and saquib.herman@knowit.se |
 
 A read-only binding blocks writes from that workspace whatever the grants say.
@@ -241,7 +237,8 @@ under `~/.vscode-server/extensions/anthropic.claude-code-*/resources/native-bina
   added (PR #1), with the service principal in the prod bundle permissions
   (PR #2). First successful CD run: `#42034493138`, into `dbw_dbxpoc_prod_weu`.
 - 2026-11-05: Prod catalog switched to `dbw_dbxpoc_prd_sbx_weu`, the prod
-  workspace's default catalog; `dbw_dbxpoc_prod_weu` deprecated.
+  workspace's default catalog (PR #3); first successful CD run on it:
+  `#42041046902`. `dbw_dbxpoc_prod_weu` was then dropped.
 - 2026-11-05: Ingestion config `config/ingestion.yml` with a validator in CI.
 - 2026-11-06: Metadata-driven ingestion pipeline (`ingestion_landing`) added.
   In dev the dbt-seeded landing tables were dropped by hand, and the pipeline
@@ -250,34 +247,31 @@ under `~/.vscode-server/extensions/anthropic.claude-code-*/resources/native-bina
 
 ## Open issues
 
-1. **Deprecated catalog still exists.** `dbw_dbxpoc_prod_weu` still holds the
-   data from CD run `#42034493138`. Drop it after the first successful CD run
-   on `dbw_dbxpoc_prd_sbx_weu`.
-2. **`ci` is not a required check.** The `protect-main` ruleset requires pull
+1. **`ci` is not a required check.** The `protect-main` ruleset requires pull
    requests and blocks deletion and force pushes, but does not require the `ci`
    status check. (The `prod` environment, its required reviewers, the variable
    `DATABRICKS_HOST` and the two secrets are set up.)
-3. **Sample data in prod.** The job runs `dbt seed` in every target, so prod's
+2. **Sample data in prod.** The job runs `dbt seed` in every target, so prod's
    `landing` schema holds generated sample data, not real data.
-4. **Two sources of truth for catalog and schema.** The bundle variables
+3. **Two sources of truth for catalog and schema.** The bundle variables
    `catalog` and `schema` in `databricks.yml` are not used by any resource;
    dbt reads `profiles.yml`. They can drift.
-5. **Token expires hourly** for local dbt and dbt Power User.
-6. **No schedule** on `dbt_job`, and no failure notifications.
-7. **No license** on the upstream dbt repo, whose code is now in this public
+4. **Token expires hourly** for local dbt and dbt Power User.
+5. **No schedule** on `dbt_job`, and no failure notifications.
+6. **No license** on the upstream dbt repo, whose code is now in this public
    repo. Not yet confirmed with its author.
-8. **Python scaffolding leftovers:** `[project.scripts] main =
+7. **Python scaffolding leftovers:** `[project.scripts] main =
    "databricks_poc.main:main"` points at a module that does not exist, and
    `tests/` has only `conftest.py`.
-9. **Unused prod warehouse:** `dbx_poc` (`7aba3a527638a7ac`) in the prod
+8. **Unused prod warehouse:** `dbx_poc` (`7aba3a527638a7ac`) in the prod
    workspace is stopped and not referenced.
-10. **CI does not validate the bundle.** `databricks bundle validate` needs
-    workspace auth, and CI uses no secrets; CD validates before deploying.
-11. **Prod ingestion source not set up.** The `raw` schema, the `landing` volume
+9. **CI does not validate the bundle.** `databricks bundle validate` needs
+   workspace auth, and CI uses no secrets; CD validates before deploying.
+10. **Prod ingestion source not set up.** The `raw` schema, the `landing` volume
     and the source files don't exist in `dbw_dbxpoc_prd_sbx_weu` yet, and prod
     `landing` still holds the dbt-seeded plain tables. `sp-dbxpoc-cicd` will
     need `READ VOLUME` on the volume.
-12. **Landing seeds still in the repo until Step F4.** `src/seeds/landing/` and
+11. **Landing seeds still in the repo until Step F4.** `src/seeds/landing/` and
     the `dbt seed` step in `dbt_job` still produce `orders`, `products`,
     `reviews` and `users`. In dev, where they are now streaming tables, a plain
     `dbt seed` or `dbt build` (locally or in the dev `dbt_job`) will collide with
@@ -285,17 +279,14 @@ under `~/.vscode-server/extensions/anthropic.claude-code-*/resources/native-bina
 
 ## Next steps
 
-1. Merge the prod catalog switch and approve its CD run; check that
-   `dbw_dbxpoc_prd_sbx_weu` has `landing`, `bronze`, `silver`, `gold`.
-2. Drop `dbw_dbxpoc_prod_weu`, and add `ci` as a required check in
-   `protect-main`.
-3. Step F4: remove the landing seeds (`src/seeds/landing/`) so `dbt seed`
+1. Add `ci` as a required check in `protect-main`.
+2. Step F4: remove the landing seeds (`src/seeds/landing/`) so `dbt seed`
    only produces `product_categories`, then set up the prod volume and files
    and drop prod's seeded landing tables before the pipeline runs there.
-4. Make `profiles.yml` the only place catalog and schema are set: remove the
+3. Make `profiles.yml` the only place catalog and schema are set: remove the
    unused bundle variables, or pass them to dbt with `--vars`.
-5. Switch local dbt to `auth_type: oauth` so tokens refresh without
+4. Switch local dbt to `auth_type: oauth` so tokens refresh without
    `dbt_env.sh`.
-6. Add a schedule (paused automatically in dev) and failure email notifications
+5. Add a schedule (paused automatically in dev) and failure email notifications
    to `dbt_job`.
-7. Remove the unused Python scaffolding, or add real Python code and tests.
+6. Remove the unused Python scaffolding, or add real Python code and tests.

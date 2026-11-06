@@ -74,9 +74,7 @@ catalog. See `src/macros/generate_schema_name.sql`.
 
 Grants on the prod catalog: the CD service principal `sp-dbxpoc-cicd` has
 `USE CATALOG`, `USE SCHEMA` and `CREATE SCHEMA`; nilabja.saha@knowit.se has
-`ALL PRIVILEGES` and `MANAGE`; saquib.herman@knowit.se is read-only. The earlier
-prod catalog `dbw_dbxpoc_prod_weu` is deprecated and will be dropped after the
-first successful CD run on `dbw_dbxpoc_prd_sbx_weu`.
+`ALL PRIVILEGES` and `MANAGE`; saquib.herman@knowit.se is read-only.
 
 Format SQL with `sqlfmt src/`.
 
