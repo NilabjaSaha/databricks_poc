@@ -10,6 +10,9 @@ _dbt_profile="${1:-${DATABRICKS_CONFIG_PROFILE:-adb-7405619838309890}}"
 
 DATABRICKS_TOKEN="$(databricks auth token -p "$_dbt_profile" -o json \
   | python3 -c 'import json, sys; print(json.load(sys.stdin)["access_token"])')" || return 1
+# The dev schema prefix must match ${workspace.current_user.short_name}: it
+# also names the pipeline's landing schema (landing_schema in databricks.yml)
+# via src/macros/generate_schema_name.sql. Change all three together.
 DBT_DEV_SCHEMA="$(databricks current-user me -p "$_dbt_profile" -o json \
   | python3 -c 'import json, re, sys; print(re.sub(r"\W", "_", json.load(sys.stdin)["userName"].split("@")[0]).lower())')" || return 1
 export DATABRICKS_TOKEN DBT_DEV_SCHEMA

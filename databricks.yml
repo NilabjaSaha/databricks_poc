@@ -13,6 +13,10 @@ variables:
     description: The catalog to use
   schema:
     description: The schema to use
+  landing_root:
+    description: Root folder of the source files (volume today, ADLS later)
+  landing_schema:
+    description: Schema for the landing streaming tables (must match dbt's landing schema)
 
 targets:
   dev:
@@ -28,20 +32,27 @@ targets:
     variables:
       catalog: dbw_dbxpoc_sbx_weu
       schema: dev
+      landing_root: /Volumes/dbw_dbxpoc_sbx_weu/raw/landing/
+      # Must equal dbt's dev landing schema: <dev_schema>_landing, built by
+      # src/macros/generate_schema_name.sql from the user name the same way as
+      # DBT_DEV_SCHEMA in scripts/dbt_env.sh. Change all three together.
+      landing_schema: ${workspace.current_user.short_name}_landing
   prod:
     mode: production
     workspace:
-      host: https://adb-7405615711496172.12.azuredatabricks.net 
+      host: https://adb-7405615711496172.12.azuredatabricks.net
       profile: dbxpoc-prd                                          # pin the prod profile
       # Deployed by CD as sp-dbxpoc-cicd, so this resolves to the service principal's
       # own folder (its application ID), which it can write to.
       root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target}
     run_as:
       # Prod jobs run as the CI service principal, never as a person.
-      service_principal_name: e33d9717-3d53-4d8d-a39c-f1b2ff4512dc  
+      service_principal_name: e33d9717-3d53-4d8d-a39c-f1b2ff4512dc
     variables:
       catalog: dbw_dbxpoc_prd_sbx_weu
       schema: prod
+      landing_root: /Volumes/dbw_dbxpoc_prd_sbx_weu/raw/landing/
+      landing_schema: landing    # dbt prod landing schema, see src/macros/generate_schema_name.sql
     permissions:
       - service_principal_name: e33d9717-3d53-4d8d-a39c-f1b2ff4512dc   # sp-dbxpoc-cicd (deploys and runs prod)
         level: CAN_MANAGE
