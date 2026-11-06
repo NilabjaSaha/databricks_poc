@@ -11,8 +11,8 @@ sources:
     format: csv
     options:
       header: "true"
-    # Column names and types match the dbt seeds (src/seeds/landing/), so the
-    # dbt source `landing` and all downstream models keep working unchanged.
+    # Column names and types match the dbt source `landing`
+    # (src/models/sources/landing_sources.yml) and the models built on it.
     schema_hints: "id BIGINT, created_at TIMESTAMP, user_id BIGINT, product_id BIGINT, quantity BIGINT, unit_price DECIMAL(10,2)"
     target_table: orders                      # in the landing schema of the target
     expectations:

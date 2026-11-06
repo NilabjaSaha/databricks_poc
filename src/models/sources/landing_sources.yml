@@ -3,7 +3,8 @@ version: 2
 sources:
   - name: landing
     database: "{{ target.catalog }}"
-    # Must match where generate_schema_name puts the landing seeds
+    # Streaming tables written by the ingestion pipeline; must match
+    # landing_schema in databricks.yml (see generate_schema_name.sql)
     schema: "{{ 'landing' if target.name == 'prod' else target.schema ~ '_landing' }}"
     description: >
       The 'landing' schema represents a collection of tables that store data related to orders, products, reviews, and users.

@@ -8,10 +8,14 @@ The dbt models (bronze/silver/gold medallion layers, macros, seeds, snapshots)
 were merged from [saquibherman/dbt_core_databricks_demo](https://github.com/saquibherman/dbt_core_databricks_demo).
 
 * `databricks.yml`: bundle definition (workspace, dev/prod targets).
-* `resources/`: bundle resources; `dbt.job.yml` runs dbt on serverless compute.
+* `resources/`: bundle resources; `ingestion.pipeline.yml` loads source files into the
+  landing schema, `dbt.job.yml` runs that pipeline and then dbt on serverless compute.
+* `config/ingestion.yml`, `pipelines/ingestion/`: metadata-driven ingestion (see
+  `docs/ingestion-framework.md`).
 * `dbt_project.yml`, `profiles.yml`, `packages.yml`: dbt project and connection profile.
 * `src/models`, `src/macros`, `src/seeds`, `src/snapshots`, `src/analyses`, `src/tests`: dbt sources.
-* `src/seeds/landing/`: sample data for the `landing` source schema.
+* `src/seeds/`: static lookup tables only (`product_categories`). Source data is
+  not seeded: it arrives as files and is ingested by the pipeline.
 * `scripts/dbt_env.sh`: exports dbt credentials from your Databricks CLI login.
 * `tests/`: Python unit tests (pytest). dbt tests live in `src/tests/`.
 
@@ -57,7 +61,7 @@ access token needed), together with your personal dev schema:
 source scripts/dbt_env.sh            # or: source scripts/dbt_env.sh <cli-profile>
 dbt deps
 dbt debug                            # check the connection
-dbt seed                             # load sample landing data
+dbt seed                             # load lookup tables (product_categories)
 dbt build                            # run models, snapshots and tests
 ```
 
