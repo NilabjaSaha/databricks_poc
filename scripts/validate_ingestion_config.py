@@ -1,7 +1,9 @@
 # /// script
 # requires-python = ">=3.12"
-# dependencies = ["pyyaml>=6,<7", "jsonschema>=4,<5"]
+# dependencies = ["pyyaml~=6.0", "jsonschema>=4,<5"]
 # ///
+# pyyaml uses ~=6.0 to match resources/ingestion.pipeline.yml, where >=,< pins
+# break the pipeline's dependency install (the shell reads < and > as redirections).
 """Validate config/ingestion.yml.
 
 Usage: uv run scripts/validate_ingestion_config.py [path]

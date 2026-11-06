@@ -105,14 +105,93 @@ itself, so it cannot take over tables dbt made.
 
 - The seeded tables were dropped by hand in dev on 2026-11-06, and the
   pipeline then created the streaming tables under the same names.
-- `dbt seed` must stop producing them (Step F4), or it will try to replace the
-  pipeline's tables.
+- Step F4 (2026-11-07) removed the landing seeds (`src/seeds/landing/` and
+  their config), so `dbt seed` no longer produces these tables and can't try to
+  replace the pipeline's.
 - The names stay the same, so the dbt source `landing`
   (`src/models/sources/landing_sources.yml`) and every model on top of it don't
   change.
 
 `product_categories` stays a dbt seed: it is reference data dbt owns, in the
 bronze schema.
+
+## Job orchestration
+
+`dbt_job` (`resources/dbt.job.yml`) runs ingestion and dbt as one job:
+
+| Task | Type | Depends on | Does |
+|---|---|---|---|
+| `ingest_landing` | `pipeline_task` on `ingestion_pipeline` (`full_refresh: false`) | — | Loads new files into the landing streaming tables. |
+| `dbt` | `dbt_task` | `ingest_landing` | `dbt deps`, `dbt seed` (only `product_categories`), `dbt build`. |
+
+The `dbt` task uses the default run condition (all dependencies succeeded): if
+ingestion fails, `dbt` is skipped, so the models never build on a partial
+load. CD runs the same job in prod.
+
+`full_refresh: false` keeps the streaming state. A full refresh re-reads every
+file and rebuilds the landing tables; start one only on purpose, from the
+pipeline UI.
+
+## Incremental loading
+
+Auto Loader remembers which files it has processed. Each update reads only
+files added since the last one; existing rows are not touched.
+
+Worked example (dev, 2026-11-07): one new file with 2 orders.
+
+| | Before | After |
+|---|---|---|
+| Rows ingested by the update | — | orders 2, products 0, reviews 0, users 0 |
+| `landing.orders` | 300 | 302 |
+| `_source_file` of the new rows | — | `…/shop/orders/orders_2026_11_07.csv` |
+| Orders `90001`, `90002` in `silver_orders` | no | yes |
+
+To repeat it:
+
+1. Write a CSV with the same header as the source, for example
+   `orders_2026_11_07.csv`:
+   ```
+   id,created_at,user_id,product_id,quantity,unit_price
+   90001,2026-11-07 09:00:00,1,1,2,10.00
+   90002,2026-11-07 09:05:00,2,3,1,25.50
+   ```
+2. Upload it to the dev volume. A new file name is what makes it new:
+   ```bash
+   databricks fs cp orders_2026_11_07.csv \
+     dbfs:/Volumes/dbw_dbxpoc_sbx_weu/raw/landing/shop/orders/ -p adb-7405619838309890
+   ```
+3. Run the job: `databricks bundle run dbt_job -t dev`.
+4. Check the result:
+   ```sql
+   SELECT _source_file, count(*)
+   FROM dbw_dbxpoc_sbx_weu.nilabja_saha_landing.orders
+   GROUP BY _source_file;
+
+   SELECT * FROM dbw_dbxpoc_sbx_weu.nilabja_saha_silver.silver_orders
+   WHERE id IN (90001, 90002);
+   ```
+   Rows written per table by each update (the event log covers the whole
+   pipeline, so this lists every landing table; a table with no new files has
+   no row in that update, i.e. 0):
+   ```sql
+   SELECT timestamp, origin.flow_name,
+          details:flow_progress:metrics:num_output_rows::bigint AS rows
+   FROM event_log(TABLE(dbw_dbxpoc_sbx_weu.nilabja_saha_landing.orders))
+   WHERE event_type = 'flow_progress'
+     AND details:flow_progress:metrics:num_output_rows IS NOT NULL
+   ORDER BY timestamp DESC;
+   ```
+
+Re-uploading a file under a name Auto Loader has already seen is ignored.
+Changing an existing file's content is not a supported way to correct data.
+
+## Dependency pins in the pipeline
+
+Pin pipeline dependencies with `~=` (for example `pyyaml~=6.0`), not
+`>=6,<7`. The pipeline installs them with an unquoted `pip` command, so the
+shell reads `<` and `>` as redirections and the install fails with "Failed to
+install environment dependency". `~=6.0` means the same (`>=6.0, <7`). The
+validator (`scripts/validate_ingestion_config.py`) uses the same pin.
 
 ## Fields
 

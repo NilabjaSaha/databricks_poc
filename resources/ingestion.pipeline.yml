@@ -13,7 +13,11 @@ resources:
             path: ../pipelines/ingestion/ingest_landing.py
       environment:
         dependencies:
-          - pyyaml>=6,<7                   # to read config/ingestion.yml
+          # To read config/ingestion.yml. Use ~= rather than >=,< : the pipeline
+          # installs dependencies with an unquoted pip command, so the shell reads
+          # < and > as redirections. Keep in sync with
+          # scripts/validate_ingestion_config.py.
+          - pyyaml~=6.0
       configuration:
         landing_root: ${var.landing_root}
         ingestion_config_path: ${workspace.file_path}/config/ingestion.yml
