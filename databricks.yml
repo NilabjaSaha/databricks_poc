@@ -13,6 +13,10 @@ variables:
     description: The catalog to use
   schema:
     description: The schema to use
+  landing_root:                                                        
+    description: Root folder of the source files (volume today, ADLS later)   
+  landing_schema:                                                      
+    description: Schema for the landing streaming tables (must match dbt's landing schema)   
 
 targets:
   dev:
@@ -28,6 +32,8 @@ targets:
     variables:
       catalog: dbw_dbxpoc_sbx_weu
       schema: dev
+      landing_root: /Volumes/dbw_dbxpoc_sbx_weu/raw/landing/           
+      landing_schema: ${workspace.current_user.short_name}_landing     
   prod:
     mode: production
     workspace:
@@ -42,6 +48,8 @@ targets:
     variables:
       catalog: dbw_dbxpoc_prd_sbx_weu
       schema: prod
+      landing_root: /Volumes/dbw_dbxpoc_prd_sbx_weu/raw/landing/      
+      landing_schema: landing 
     permissions:
       - service_principal_name: e33d9717-3d53-4d8d-a39c-f1b2ff4512dc   # sp-dbxpoc-cicd (deploys and runs prod)
         level: CAN_MANAGE

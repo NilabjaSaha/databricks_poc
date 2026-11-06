@@ -1,4 +1,4 @@
-# Ingestion framework: config
+# Ingestion framework
 
 `config/ingestion.yml` describes every source the ingestion framework loads
 into the landing schema. It holds one entry per source under `sources:`, and
@@ -6,6 +6,108 @@ contains nothing environment-specific: the landing root (a volume today, ADLS
 later) comes from a bundle variable in `databricks.yml`.
 
 CI validates the file with `scripts/validate_ingestion_config.py`.
+
+## How the pipeline works
+
+```
+config/ingestion.yml ──▶ pipelines/ingestion/ingest_landing.py ──▶ <catalog>.<landing schema>.<target_table>
+                          (one Auto Loader streaming table per source)            ▲
+<landing_root>/<path> ───────────────────────────────────────────────────────────┘
+```
+
+1. The Lakeflow Declarative Pipeline `ingestion_landing`
+   (`resources/ingestion.pipeline.yml`, serverless) gets two settings from the
+   bundle: `landing_root` (bundle variable) and `ingestion_config_path` (the
+   deployed copy of `config/ingestion.yml`).
+2. `ingest_landing.py` reads the config and, for each source, defines a
+   streaming table named `target_table`. Auto Loader (`cloudFiles`) reads new
+   files under `<landing_root>/<path>` incrementally, with `format`, `options`
+   and `schema_hints` from the config. New columns are added to the table
+   (`schemaEvolutionMode: addNewColumns`).
+3. The `warn`, `drop` and `fail` rules become pipeline expectations
+   (`expect_all`, `expect_all_or_drop`, `expect_all_or_fail`).
+4. `source_system`, `pii_columns` and `tags` are stored as table properties
+   (`dbxpoc.source_system`, `dbxpoc.pii_columns`, `dbxpoc.tag.<key>`).
+5. The pipeline publishes to the bundle variable `landing_schema`, the same
+   schema dbt reads its `landing` source from: `<user>_landing` in dev,
+   `landing` in prod.
+
+Each update only processes files it has not seen before.
+
+## Metadata columns
+
+Every landing table has the source columns plus:
+
+| Column | Set by | Meaning |
+|---|---|---|
+| `_ingested_at` | pipeline (`current_timestamp()`) | When the row was ingested. |
+| `_source_file` | pipeline (`_metadata.file_path`) | Full path of the file the row came from. |
+| `_rescued_data` | Auto Loader | Values that didn't fit the schema (wrong type, unexpected column), as JSON. `NULL` when the row parsed cleanly. |
+
+## Data quality results
+
+- **Pipeline UI:** open the pipeline, select a table, and see the **Data
+  quality** tab: passed and failed records per expectation, and dropped
+  records.
+- **SQL:** query the event log of a table (shown for dev; use `landing` in
+  prod):
+
+```sql
+SELECT
+  timestamp,
+  e.dataset,
+  e.name AS expectation,
+  e.passed_records,
+  e.failed_records
+FROM (
+  SELECT
+    timestamp,
+    explode(from_json(
+      details:flow_progress:data_quality:expectations,
+      'array<struct<name string, dataset string, passed_records bigint, failed_records bigint>>'
+    )) AS e
+  FROM event_log(TABLE(dbw_dbxpoc_sbx_weu.nilabja_saha_landing.orders))
+  WHERE event_type = 'flow_progress'
+    AND details:flow_progress:data_quality:expectations IS NOT NULL
+)
+ORDER BY timestamp DESC;
+```
+
+`drop` rules count their removed rows in `failed_records`; the rows are not in
+the table.
+
+## Switching to ADLS
+
+The source location is only the bundle variable `landing_root`, set per target
+in `databricks.yml`. Moving a target from the volume to ADLS is a one-line
+change, for example:
+
+```yaml
+      landing_root: abfss://landing@stdbxpocsbxweu01.dfs.core.windows.net/
+```
+
+Neither the pipeline code nor `config/ingestion.yml` changes, because every
+`path` is relative to `landing_root`. Before switching, Unity Catalog needs an
+external location covering that URL, with `READ FILES` for the identity that
+runs the pipeline.
+
+## Why the dbt landing seeds were removed
+
+A table belongs to the tool that created it. `dbt seed` created
+`landing.orders`, `products`, `reviews` and `users` as plain Delta tables. A
+Lakeflow Declarative Pipeline can only manage streaming tables it created
+itself, so it cannot take over tables dbt made.
+
+- The seeded tables were dropped by hand in dev on 2026-11-06, and the
+  pipeline then created the streaming tables under the same names.
+- `dbt seed` must stop producing them (Step F4), or it will try to replace the
+  pipeline's tables.
+- The names stay the same, so the dbt source `landing`
+  (`src/models/sources/landing_sources.yml`) and every model on top of it don't
+  change.
+
+`product_categories` stays a dbt seed: it is reference data dbt owns, in the
+bronze schema.
 
 ## Fields
 

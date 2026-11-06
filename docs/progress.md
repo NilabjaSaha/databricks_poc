@@ -27,8 +27,15 @@ minutes, 1–1 clusters and tags `project=dbxpoc`, `env=prod`.
 |---|---|---|
 | `dbt_job` | `resources/dbt.job.yml` | One `dbt_task` on serverless compute (environment version 5, `dbt-databricks==1.12.8`). Runs `dbt deps`, `dbt seed`, `dbt build` with `--target=${bundle.target}`. The warehouse comes from `profiles.yml`; the job has no `warehouse_id`. |
 
-There are no pipelines, dashboards or apps. `src/notebook.ipynb` is the
-template's "Hello world" notebook and is not part of any job.
+| `ingestion_pipeline` (`ingestion_landing`) | `resources/ingestion.pipeline.yml` | Serverless Lakeflow Declarative Pipeline. Reads `config/ingestion.yml` and loads each source with Auto Loader from `${var.landing_root}` into a streaming table in `${var.landing_schema}`. See `docs/ingestion-framework.md`. |
+
+Bundle variables for ingestion: `landing_root` (dev:
+`/Volumes/dbw_dbxpoc_sbx_weu/raw/landing/`, prod:
+`/Volumes/dbw_dbxpoc_prd_sbx_weu/raw/landing/`) and `landing_schema` (dev:
+`${workspace.current_user.short_name}_landing`, prod: `landing`).
+
+There are no dashboards or apps. `src/notebook.ipynb` is the template's "Hello
+world" notebook and is not part of any job.
 
 The job has no schedule or trigger. In prod it runs as the service principal
 `sp-dbxpoc-cicd` (`run_as` in `databricks.yml`).
@@ -235,6 +242,11 @@ under `~/.vscode-server/extensions/anthropic.claude-code-*/resources/native-bina
   (PR #2). First successful CD run: `#42034493138`, into `dbw_dbxpoc_prod_weu`.
 - 2026-11-05: Prod catalog switched to `dbw_dbxpoc_prd_sbx_weu`, the prod
   workspace's default catalog; `dbw_dbxpoc_prod_weu` deprecated.
+- 2026-11-05: Ingestion config `config/ingestion.yml` with a validator in CI.
+- 2026-11-06: Metadata-driven ingestion pipeline (`ingestion_landing`) added.
+  In dev the dbt-seeded landing tables were dropped by hand, and the pipeline
+  created them as streaming tables: orders 300, products 20, reviews 120,
+  users 50 rows (matching the CSVs), no `NULL` `created_at`, no rescued data.
 
 ## Open issues
 
@@ -261,6 +273,15 @@ under `~/.vscode-server/extensions/anthropic.claude-code-*/resources/native-bina
    workspace is stopped and not referenced.
 10. **CI does not validate the bundle.** `databricks bundle validate` needs
     workspace auth, and CI uses no secrets; CD validates before deploying.
+11. **Prod ingestion source not set up.** The `raw` schema, the `landing` volume
+    and the source files don't exist in `dbw_dbxpoc_prd_sbx_weu` yet, and prod
+    `landing` still holds the dbt-seeded plain tables. `sp-dbxpoc-cicd` will
+    need `READ VOLUME` on the volume.
+12. **Landing seeds still in the repo until Step F4.** `src/seeds/landing/` and
+    the `dbt seed` step in `dbt_job` still produce `orders`, `products`,
+    `reviews` and `users`. In dev, where they are now streaming tables, a plain
+    `dbt seed` or `dbt build` (locally or in the dev `dbt_job`) will collide with
+    them; until F4, exclude them, e.g. `dbt build --exclude path:src/seeds/landing`.
 
 ## Next steps
 
@@ -268,8 +289,9 @@ under `~/.vscode-server/extensions/anthropic.claude-code-*/resources/native-bina
    `dbw_dbxpoc_prd_sbx_weu` has `landing`, `bronze`, `silver`, `gold`.
 2. Drop `dbw_dbxpoc_prod_weu`, and add `ci` as a required check in
    `protect-main`.
-3. Replace prod's seeded landing data with a real ingestion path, and remove
-   `dbt seed` (or limit it to `product_categories`) in the prod job.
+3. Step F4: remove the landing seeds (`src/seeds/landing/`) so `dbt seed`
+   only produces `product_categories`, then set up the prod volume and files
+   and drop prod's seeded landing tables before the pipeline runs there.
 4. Make `profiles.yml` the only place catalog and schema are set: remove the
    unused bundle variables, or pass them to dbt with `--vars`.
 5. Switch local dbt to `auth_type: oauth` so tokens refresh without
