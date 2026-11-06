@@ -44,6 +44,11 @@ Every landing table has the source columns plus:
 | `_source_file` | pipeline (`_metadata.file_path`) | Full path of the file the row came from. |
 | `_rescued_data` | Auto Loader | Values that didn't fit the schema (wrong type, unexpected column), as JSON. `NULL` when the row parsed cleanly. |
 
+**Decision:** the bronze models keep these columns. `bronze_orders`,
+`bronze_reviews` and `bronze_users` stay `select *`, so each bronze row shows
+when and from which file it was ingested, and any rescued data. Silver and gold
+select their columns explicitly and don't carry them.
+
 ## Data quality results
 
 - **Pipeline UI:** open the pipeline, select a table, and see the **Data

@@ -13,7 +13,7 @@ resources:
             path: ../pipelines/ingestion/ingest_landing.py
       environment:
         dependencies:
-          - pyyaml                         # to read config/ingestion.yml
+          - pyyaml>=6,<7                   # to read config/ingestion.yml
       configuration:
         landing_root: ${var.landing_root}
         ingestion_config_path: ${workspace.file_path}/config/ingestion.yml
