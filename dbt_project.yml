@@ -40,6 +40,3 @@ models:
 seeds:
   databricks_poc:
     +schema: bronze
-    # Sample source data, standing in for files uploaded to the landing schema.
-    landing:
-      +schema: landing

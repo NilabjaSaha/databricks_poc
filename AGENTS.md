@@ -61,7 +61,9 @@ Project status, open issues and next steps: [docs/progress.md](docs/progress.md)
   `bronze`, `silver`, `gold`. Gold aggregates add a grain suffix with a double
   underscore: `gold_sales__daily`.
 - dbt property files start with an underscore: `_silver.yml`, `_gold.yml`.
-- Seeds that stand in for source data go in `src/seeds/landing/`.
+- Source data arrives as files in the landing volume (`landing_root`) and is
+  ingested by the pipeline via `config/ingestion.yml`; never seed it. Seeds
+  (`src/seeds/`) are only for static lookup tables like `product_categories`.
 - Names of catalogs, schemas, tables and columns: lowercase `snake_case`.
 
 ### Deployment

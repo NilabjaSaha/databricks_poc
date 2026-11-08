@@ -4,7 +4,15 @@ resources:
       name: dbt_job
 
       tasks:
+        # 1) Ingest new source files into the landing streaming tables
+        - task_key: ingest_landing
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.ingestion_pipeline.id}
+            full_refresh: false
+
         - task_key: dbt
+          depends_on:
+            - task_key: ingest_landing
           environment_key: default
           dbt_task:
             project_directory: ../

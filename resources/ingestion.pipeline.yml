@@ -1,0 +1,23 @@
+# Metadata-driven ingestion pipeline: Auto Loader → landing streaming tables.
+# Sources are defined in config/ingestion.yml, not here.
+resources:
+  pipelines:
+    ingestion_pipeline:
+      name: ingestion_landing
+      catalog: ${var.catalog}
+      schema: ${var.landing_schema}        # same landing schema dbt reads from
+      serverless: true
+      channel: CURRENT
+      libraries:
+        - file:
+            path: ../pipelines/ingestion/ingest_landing.py
+      environment:
+        dependencies:
+          # To read config/ingestion.yml. Use ~= rather than >=,< : the pipeline
+          # installs dependencies with an unquoted pip command, so the shell reads
+          # < and > as redirections. Keep in sync with
+          # scripts/validate_ingestion_config.py.
+          - pyyaml~=6.0
+      configuration:
+        landing_root: ${var.landing_root}
+        ingestion_config_path: ${workspace.file_path}/config/ingestion.yml

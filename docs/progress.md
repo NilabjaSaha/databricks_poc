@@ -25,10 +25,17 @@ minutes, 1–1 clusters and tags `project=dbxpoc`, `env=prod`.
 
 | Resource | File | What it does |
 |---|---|---|
-| `dbt_job` | `resources/dbt.job.yml` | One `dbt_task` on serverless compute (environment version 5, `dbt-databricks==1.12.8`). Runs `dbt deps`, `dbt seed`, `dbt build` with `--target=${bundle.target}`. The warehouse comes from `profiles.yml`; the job has no `warehouse_id`. |
+| `dbt_job` | `resources/dbt.job.yml` | Task `ingest_landing` (`pipeline_task` on `ingestion_pipeline`), then task `dbt` (depends on it; skipped if ingestion fails): `dbt_task` on serverless compute (environment version 5, `dbt-databricks==1.12.8`) running `dbt deps`, `dbt seed` (only `product_categories`), `dbt build` with `--target=${bundle.target}`. The warehouse comes from `profiles.yml`; the job has no `warehouse_id`. |
 
-There are no pipelines, dashboards or apps. `src/notebook.ipynb` is the
-template's "Hello world" notebook and is not part of any job.
+| `ingestion_pipeline` (`ingestion_landing`) | `resources/ingestion.pipeline.yml` | Serverless Lakeflow Declarative Pipeline. Reads `config/ingestion.yml` and loads each source with Auto Loader from `${var.landing_root}` into a streaming table in `${var.landing_schema}`. See `docs/ingestion-framework.md`. |
+
+Bundle variables for ingestion: `landing_root` (dev:
+`/Volumes/dbw_dbxpoc_sbx_weu/raw/landing/`, prod:
+`/Volumes/dbw_dbxpoc_prd_sbx_weu/raw/landing/`) and `landing_schema` (dev:
+`${workspace.current_user.short_name}_landing`, prod: `landing`).
+
+There are no dashboards or apps. `src/notebook.ipynb` is the template's "Hello
+world" notebook and is not part of any job.
 
 The job has no schedule or trigger. In prod it runs as the service principal
 `sp-dbxpoc-cicd` (`run_as` in `databricks.yml`).
@@ -80,7 +87,7 @@ as in the Databricks `dbt-sql` bundle template.
 
 | Layer | Models | Materialization | Notes |
 |---|---|---|---|
-| landing (source) | `orders`, `products`, `reviews`, `users` | seeds | Sample data in `src/seeds/landing/`, generated for this POC. Defined as source `landing` in `src/models/sources/landing_sources.yml`. |
+| landing (source) | `orders`, `products`, `reviews`, `users` | streaming tables (ingestion pipeline) | Loaded from files under `landing_root` by `ingestion_landing`; see `docs/ingestion-framework.md`. The files are generated sample data for this POC. Defined as source `landing` in `src/models/sources/landing_sources.yml`. |
 | bronze | `bronze_orders`, `bronze_reviews`, `bronze_users`, `products_snapshot`, `product_categories` | table / snapshot / seed | `bronze_users` is tagged `contains_pii`. `products_snapshot` is a timestamp snapshot of `landing.products` on `created_at`. |
 | silver | `silver_orders`, `silver_products`, `silver_users` | table | `silver_orders.order_amount` uses the `multiply_columns` macro. `silver_products` reads current rows of `products_snapshot`. |
 | gold | `gold_sales__daily`, `gold_avg_rating__daily` | view | Daily revenue by product, category, vendor, city and channel; daily average rating per product. |
@@ -232,6 +239,19 @@ under `~/.vscode-server/extensions/anthropic.claude-code-*/resources/native-bina
 - 2026-11-05: Prod catalog switched to `dbw_dbxpoc_prd_sbx_weu`, the prod
   workspace's default catalog (PR #3); first successful CD run on it:
   `#42041046902`. `dbw_dbxpoc_prod_weu` was then dropped.
+- 2026-11-05: Ingestion config `config/ingestion.yml` with a validator in CI.
+- 2026-11-06: Metadata-driven ingestion pipeline (`ingestion_landing`) added.
+  In dev the dbt-seeded landing tables were dropped by hand, and the pipeline
+  created them as streaming tables: orders 300, products 20, reviews 120,
+  users 50 rows (matching the CSVs), no `NULL` `created_at`, no rescued data.
+- 2026-11-07: Step F4. Landing seeds removed (`src/seeds/landing/`); `dbt seed`
+  only loads `product_categories`. `dbt_job` now runs `ingest_landing` (the
+  pipeline) before `dbt`. Full dev job run succeeded.
+- 2026-11-07: Incremental test in dev: one new file
+  `shop/orders/orders_2026_11_07.csv` (orders `90001`, `90002`). The update
+  ingested 2 orders and 0 rows for the other tables; `landing.orders` went from
+  300 to 302 with `_source_file` pointing at the new file, and both orders
+  reached `silver_orders`.
 
 ## Open issues
 
@@ -239,8 +259,8 @@ under `~/.vscode-server/extensions/anthropic.claude-code-*/resources/native-bina
    requests and blocks deletion and force pushes, but does not require the `ci`
    status check. (The `prod` environment, its required reviewers, the variable
    `DATABRICKS_HOST` and the two secrets are set up.)
-2. **Sample data in prod.** The job runs `dbt seed` in every target, so prod's
-   `landing` schema holds generated sample data, not real data.
+2. **Sample data only.** The landing files are generated sample data; there
+   is no real source system feeding `landing_root` yet.
 3. **Two sources of truth for catalog and schema.** The bundle variables
    `catalog` and `schema` in `databricks.yml` are not used by any resource;
    dbt reads `profiles.yml`. They can drift.
@@ -255,12 +275,19 @@ under `~/.vscode-server/extensions/anthropic.claude-code-*/resources/native-bina
    workspace is stopped and not referenced.
 9. **CI does not validate the bundle.** `databricks bundle validate` needs
    workspace auth, and CI uses no secrets; CD validates before deploying.
+10. **Prod ingestion source not set up.** In `dbw_dbxpoc_prd_sbx_weu`: the
+    `raw` schema, the `landing` volume and the source files don't exist yet;
+    prod `landing` still holds the dbt-seeded plain tables, which must be
+    dropped so the pipeline can create its streaming tables; and
+    `sp-dbxpoc-cicd` needs `READ VOLUME` on the volume. Until then the first
+    task of `dbt_job` (`ingest_landing`) fails in prod, so the CD run after
+    merging `feat/metadata-ingestion` would fail and skip `dbt`.
 
 ## Next steps
 
 1. Add `ci` as a required check in `protect-main`.
-2. Replace prod's seeded landing data with a real ingestion path, and remove
-   `dbt seed` (or limit it to `product_categories`) in the prod job.
+2. Set up prod ingestion (open issue 10) before merging
+   `feat/metadata-ingestion`, then approve its CD run.
 3. Make `profiles.yml` the only place catalog and schema are set: remove the
    unused bundle variables, or pass them to dbt with `--vars`.
 4. Switch local dbt to `auth_type: oauth` so tokens refresh without
