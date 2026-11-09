@@ -17,6 +17,10 @@ variables:
     description: Root folder of the source files (volume today, ADLS later)
   landing_schema:
     description: Schema for the landing streaming tables (must match dbt's landing schema)
+  bronze_schema:
+    description: dbt's bronze schema (used by the governance task)
+  silver_schema:
+    description: dbt's silver schema (used by the governance task)
 
 targets:
   dev:
@@ -33,10 +37,12 @@ targets:
       catalog: dbw_dbxpoc_sbx_weu
       schema: dev
       landing_root: /Volumes/dbw_dbxpoc_sbx_weu/raw/landing/
-      # Must equal dbt's dev landing schema: <dev_schema>_landing, built by
+      # Must equal dbt's dev schemas: <dev_schema>_<layer>, built by
       # src/macros/generate_schema_name.sql from the user name the same way as
       # DBT_DEV_SCHEMA in scripts/dbt_env.sh. Change all three together.
       landing_schema: ${workspace.current_user.short_name}_landing
+      bronze_schema: ${workspace.current_user.short_name}_bronze
+      silver_schema: ${workspace.current_user.short_name}_silver
   prod:
     mode: production
     workspace:
@@ -53,6 +59,8 @@ targets:
       schema: prod
       landing_root: /Volumes/dbw_dbxpoc_prd_sbx_weu/raw/landing/
       landing_schema: landing    # dbt prod landing schema, see src/macros/generate_schema_name.sql
+      bronze_schema: bronze
+      silver_schema: silver
     permissions:
       - service_principal_name: e33d9717-3d53-4d8d-a39c-f1b2ff4512dc   # sp-dbxpoc-cicd (deploys and runs prod)
         level: CAN_MANAGE

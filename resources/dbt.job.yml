@@ -24,6 +24,28 @@ resources:
               - 'dbt seed --target=${bundle.target} --vars "{ dev_schema: ${workspace.current_user.short_name} }"'
               - 'dbt build --target=${bundle.target} --vars "{ dev_schema: ${workspace.current_user.short_name} }"'
 
+        # 3) PII tags and column masks from config/ingestion.yml (docs/governance.md).
+        # After dbt, because dbt recreates its tables on every run.
+        - task_key: apply_governance
+          depends_on:
+            - task_key: dbt
+          environment_key: governance
+          spark_python_task:
+            python_file: ../scripts/apply_governance.py
+            parameters:
+              - --catalog
+              - ${var.catalog}
+              - --landing-schema
+              - ${var.landing_schema}
+              - --bronze-schema
+              - ${var.bronze_schema}
+              - --silver-schema
+              - ${var.silver_schema}
+              - --config
+              - ${workspace.file_path}/config/ingestion.yml
+              - --governance-dir
+              - ${workspace.file_path}/governance
+
       environments:
         - environment_key: default
           spec:
@@ -31,3 +53,9 @@ resources:
             dependencies:
               # Must match dbt-databricks in ../requirements-dbt.txt (local dev)
               - dbt-databricks==1.12.8
+        - environment_key: governance
+          spec:
+            environment_version: "5"
+            dependencies:
+              # ~= not >=,< (see docs/ingestion-framework.md, dependency pins)
+              - pyyaml~=6.0
