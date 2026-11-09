@@ -87,17 +87,22 @@ would avoid that; it was kept as `is_member('admins')` on purpose for now.
 pipeline-owned table belongs in the pipeline definition.
 
 **After dbt.** dbt rebuilds its tables on every run (`CREATE OR REPLACE TABLE
-AS SELECT`), so anything set on a dbt table from outside dbt must be set again
-after `dbt build`. Running governance as the task after `dbt` does that every
-time, and the job only finishes successfully once tags and masks are in place.
+AS SELECT`), and new tables or columns only exist after `dbt build`. Running
+governance as the task after `dbt` tags and masks whatever dbt produced, and
+the job only finishes successfully once tags and masks are in place.
+
+Tested in dev on 2026-11-09: rebuilding `bronze_users` with
+`dbt run -s bronze_users` kept both the column mask and the column tags.
+`CREATE OR REPLACE` doesn't remove them, so there is no unmasked window
+between the `dbt` and `apply_governance` tasks, and no dbt `post_hook` is
+needed.
 
 **Consequences:**
 
 - dbt runs as a non-admin in prod (`sp-dbxpoc-cicd`), so a dbt model that reads
   `bronze_users.email` would get masked values. No model does today.
-- It is not verified whether `CREATE OR REPLACE` keeps the mask. If it doesn't,
-  `bronze_users.email` is unmasked between the end of the `dbt` task and the
-  end of `apply_governance` (a few minutes per run).
+- The landing streaming table `users` (and `reviews.reviewer`) is tagged but
+  not masked: anyone who can read the landing schema sees real emails there.
 
 ## Permissions
 

@@ -252,6 +252,14 @@ under `~/.vscode-server/extensions/anthropic.claude-code-*/resources/native-bina
   ingested 2 orders and 0 rows for the other tables; `landing.orders` went from
   300 to 302 with `_source_file` pointing at the new file, and both orders
   reached `silver_orders`.
+- 2026-11-08: Prod ingestion live: `feat/metadata-ingestion` merged (PR #5);
+  CD run `#42531947606` succeeded. Prod has the volume `raw.landing`, and
+  `landing.orders` is a streaming table owned by `sp-dbxpoc-cicd`.
+- 2026-11-09: G1 governance: `apply_governance` task after `dbt` tags every
+  `pii_columns` column (`pii`, `pii_source`) in landing and bronze and masks
+  `bronze_users.email` with `<catalog>.governance.mask_email`. Two dev job runs
+  succeeded (10 tagged, 1 masked, 5 skipped, 0 failed). A rebuild of
+  `bronze_users` keeps the mask and the tags. See `docs/governance.md`.
 
 ## Open issues
 
@@ -275,19 +283,27 @@ under `~/.vscode-server/extensions/anthropic.claude-code-*/resources/native-bina
    workspace is stopped and not referenced.
 9. **CI does not validate the bundle.** `databricks bundle validate` needs
    workspace auth, and CI uses no secrets; CD validates before deploying.
-10. **Prod ingestion source not set up.** In `dbw_dbxpoc_prd_sbx_weu`: the
-    `raw` schema, the `landing` volume and the source files don't exist yet;
-    prod `landing` still holds the dbt-seeded plain tables, which must be
-    dropped so the pipeline can create its streaming tables; and
-    `sp-dbxpoc-cicd` needs `READ VOLUME` on the volume. Until then the first
-    task of `dbt_job` (`ingest_landing`) fails in prod, so the CD run after
-    merging `feat/metadata-ingestion` would fail and skip `dbt`.
+10. **Dev admins see real prod emails.** `mask_email` uses
+    `is_member('admins')`, which checks the admins group of the workspace that
+    runs the query. Dev can read prod catalogs (read-only binding), so dev
+    workspace admins querying prod `bronze_users` from dev get real emails. An
+    account group with `is_account_group_member()` would avoid it.
+11. **The service principal sees masked emails.** `sp-dbxpoc-cicd` is not an
+    admin, so a future dbt model reading `bronze_users.email` in prod would get
+    masked values (no model does today).
+12. **Shared dev governance schema.** All developers share
+    `dbw_dbxpoc_sbx_weu.governance`. The first to run `apply_governance` owns
+    `mask_email`; another developer's `CREATE OR REPLACE FUNCTION` fails until
+    they get `MANAGE` on it (or the schema gets a group owner).
+13. **`landing.users` is readable unmasked.** The landing streaming tables are
+    tagged but not masked, so anyone who can read the landing schema sees real
+    names, emails, zips and birth dates (and `reviews.reviewer`).
 
 ## Next steps
 
 1. Add `ci` as a required check in `protect-main`.
-2. Set up prod ingestion (open issue 10) before merging
-   `feat/metadata-ingestion`, then approve its CD run.
+2. Decide the mask identity check (open issue 10) and how to protect
+   `landing.users` (open issue 13), then merge `feat/governance-semantics`.
 3. Make `profiles.yml` the only place catalog and schema are set: remove the
    unused bundle variables, or pass them to dbt with `--vars`.
 4. Switch local dbt to `auth_type: oauth` so tokens refresh without
