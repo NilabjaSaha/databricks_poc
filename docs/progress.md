@@ -3,7 +3,7 @@
 Status of the `databricks_poc` project: a Declarative Automation Bundle (DAB)
 that deploys a dbt Core project to Databricks.
 
-Last updated: 2026-11-11 (G2 metric views in dev). Workspace facts (jobs, runs, warehouses, catalog
+Last updated: 2026-11-11 (phase 2 complete in dev and prod). Workspace facts (jobs, runs, warehouses, catalog
 bindings and grants) were checked on 2026-11-04; the service principal, its
 access and the prod schemas on 2026-11-05.
 
@@ -267,6 +267,11 @@ under `~/.vscode-server/extensions/anthropic.claude-code-*/resources/native-bina
   revenue by category and at the gold grain matches `gold_sales__daily`
   (total 70,430.37, 302 orders), and `avg_rating` matches
   `gold_avg_rating__daily`. See `docs/semantics.md`.
+- 2026-11-11: **Phase 2 complete in dev and prod.** `dbt_job` creates the
+  metric views `mv_sales` and `mv_reviews` in both environments (merged in
+  PR #7). Genie agents set up by hand in the UI, each on those two metric
+  views only, with instructions and 5 sample questions: "Shop sales & reviews
+  (dev)" in the dev workspace and "Shop sales & reviews" in prod.
 
 ## Open issues
 
@@ -305,12 +310,16 @@ under `~/.vscode-server/extensions/anthropic.claude-code-*/resources/native-bina
 13. **`landing.users` is readable unmasked.** The landing streaming tables are
     tagged but not masked, so anyone who can read the landing schema sees real
     names, emails, zips and birth dates (and `reviews.reviewer`).
+14. **Genie agents are UI-only.** "Shop sales & reviews (dev)" and "Shop
+    sales & reviews" were created by hand and are not in Git, CI or CD: their
+    instructions, sample questions and data sources can drift between dev and
+    prod, and are lost if an agent is deleted.
 
 ## Next steps
 
 1. Add `ci` as a required check in `protect-main`.
 2. Decide the mask identity check (open issue 10) and how to protect
-   `landing.users` (open issue 13), then merge `feat/governance-semantics`.
+   `landing.users` (open issue 13).
 3. Make `profiles.yml` the only place catalog and schema are set: remove the
    unused bundle variables, or pass them to dbt with `--vars`.
 4. Switch local dbt to `auth_type: oauth` so tokens refresh without
@@ -318,3 +327,10 @@ under `~/.vscode-server/extensions/anthropic.claude-code-*/resources/native-bina
 5. Add a schedule (paused automatically in dev) and failure email notifications
    to `dbt_job`.
 6. Remove the unused Python scaffolding, or add real Python code and tests.
+7. Agentic AI: governed UC functions as agent tools, Vector Search for RAG
+   (e.g. over review texts), and an agent deployed to a Model Serving
+   endpoint.
+8. Switch `landing_root` from the volume to ADLS once the admin delivers the
+   storage access.
+9. Rotate the `sp-dbxpoc-cicd` OAuth secret (GitHub secret
+   `DATABRICKS_CLIENT_SECRET`) by 2027-02-03.
