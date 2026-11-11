@@ -46,6 +46,26 @@ resources:
               - --governance-dir
               - ${workspace.file_path}/governance
 
+        # 4) Metric views from semantics/*.sql in the gold schema (docs/semantics.md).
+        # After dbt, because they read dbt's tables. Independent of apply_governance.
+        - task_key: apply_semantics
+          depends_on:
+            - task_key: dbt
+          environment_key: semantics
+          spark_python_task:
+            python_file: ../scripts/apply_semantics.py
+            parameters:
+              - --catalog
+              - ${var.catalog}
+              - --bronze-schema
+              - ${var.bronze_schema}
+              - --silver-schema
+              - ${var.silver_schema}
+              - --gold-schema
+              - ${var.gold_schema}
+              - --semantics-dir
+              - ${workspace.file_path}/semantics
+
       environments:
         - environment_key: default
           spec:
@@ -59,3 +79,6 @@ resources:
             dependencies:
               # ~= not >=,< (see docs/ingestion-framework.md, dependency pins)
               - pyyaml~=6.0
+        - environment_key: semantics
+          spec:
+            environment_version: "5"

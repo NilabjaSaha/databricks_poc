@@ -3,7 +3,7 @@
 Status of the `databricks_poc` project: a Declarative Automation Bundle (DAB)
 that deploys a dbt Core project to Databricks.
 
-Last updated: 2026-11-05 (old prod catalog dropped). Workspace facts (jobs, runs, warehouses, catalog
+Last updated: 2026-11-11 (G2 metric views in dev). Workspace facts (jobs, runs, warehouses, catalog
 bindings and grants) were checked on 2026-11-04; the service principal, its
 access and the prod schemas on 2026-11-05.
 
@@ -260,6 +260,13 @@ under `~/.vscode-server/extensions/anthropic.claude-code-*/resources/native-bina
   `bronze_users.email` with `<catalog>.governance.mask_email`. Two dev job runs
   succeeded (10 tagged, 1 masked, 5 skipped, 0 failed). A rebuild of
   `bronze_users` keeps the mask and the tags. See `docs/governance.md`.
+- 2026-11-11: G2 metric views: `apply_semantics` task after `dbt` creates
+  `mv_sales` (on `silver_orders` with products and users) and `mv_reviews` (on
+  `bronze_reviews` with products) from `semantics/*.sql` in the gold schema;
+  new bundle variable `gold_schema`. Dev job run `1044477649508741` succeeded;
+  revenue by category and at the gold grain matches `gold_sales__daily`
+  (total 70,430.37, 302 orders), and `avg_rating` matches
+  `gold_avg_rating__daily`. See `docs/semantics.md`.
 
 ## Open issues
 
